@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const calls: string[][] = [];
+const mock = { stdout: "", fail: false };
 
 vi.mock("node:child_process", () => ({
   execFile: (
@@ -9,13 +10,24 @@ vi.mock("node:child_process", () => ({
     callback: (error: unknown, result: unknown) => void,
   ) => {
     calls.push(args);
-    callback(null, { stdout: "", stderr: "" });
+    if (mock.fail) {
+      callback(new Error("git failed"), null);
+      return;
+    }
+    callback(null, { stdout: mock.stdout, stderr: "" });
   },
 }));
 vi.mock("vscode", () => ({}), { virtual: true });
 vi.mock("../logger", () => ({ log: vi.fn() }));
 
-import { pruneWorktrees, removeWorktree, setWorktreeLock } from "./cli";
+import {
+  createWorktree,
+  isValidBranchName,
+  listStartPoints,
+  pruneWorktrees,
+  removeWorktree,
+  setWorktreeLock,
+} from "./cli";
 
 function lastArgs(): string[] {
   return calls[calls.length - 1];
@@ -29,6 +41,8 @@ function lastArgs(): string[] {
 describe("git worktree argv construction", () => {
   beforeEach(() => {
     calls.length = 0;
+    mock.stdout = "";
+    mock.fail = false;
   });
 
   it("separates the path operand from options on remove", async () => {
@@ -104,5 +118,90 @@ describe("git worktree argv construction", () => {
   it("prunes against the given repo only", async () => {
     await pruneWorktrees("/repo");
     expect(lastArgs()).toEqual(["-C", "/repo", "worktree", "prune"]);
+  });
+
+  it("puts the new branch with its flag and the operands after the separator on add", async () => {
+    await createWorktree("/repo", "/repo/../wt", "feat/x", "origin/main");
+    expect(lastArgs()).toEqual([
+      "-C",
+      "/repo",
+      "worktree",
+      "add",
+      "-b",
+      "feat/x",
+      "--",
+      "/repo/../wt",
+      "origin/main",
+    ]);
+  });
+
+  it("does not let a dash-leading worktree path become a flag on add", async () => {
+    await createWorktree("/repo", "-f", "feat/x", "HEAD");
+    const args = lastArgs();
+    expect(args.indexOf("-f")).toBeGreaterThan(args.indexOf("--"));
+  });
+});
+
+describe("branch name validation", () => {
+  beforeEach(() => {
+    calls.length = 0;
+    mock.stdout = "";
+    mock.fail = false;
+  });
+
+  it("asks git rather than guessing at the rules", async () => {
+    await isValidBranchName("/repo", "feat/x");
+    expect(lastArgs()).toEqual([
+      "-C",
+      "/repo",
+      "check-ref-format",
+      "--branch",
+      "feat/x",
+    ]);
+  });
+
+  it("treats a git failure as an invalid name", async () => {
+    mock.fail = true;
+    expect(await isValidBranchName("/repo", "bad..name")).toBe(false);
+  });
+
+  it("rejects a dash-leading name without asking git, which would read it as a flag", async () => {
+    expect(await isValidBranchName("/repo", "-force")).toBe(false);
+    expect(calls).toHaveLength(0);
+  });
+});
+
+describe("listStartPoints", () => {
+  beforeEach(() => {
+    calls.length = 0;
+    mock.stdout = "";
+    mock.fail = false;
+  });
+
+  it("lists local and remote refs by short name", async () => {
+    mock.stdout = "main\nfeat/x\norigin/main\n";
+    expect(await listStartPoints("/repo")).toEqual([
+      "main",
+      "feat/x",
+      "origin/main",
+    ]);
+    expect(lastArgs()).toEqual([
+      "-C",
+      "/repo",
+      "for-each-ref",
+      "--format=%(refname:short)",
+      "refs/heads",
+      "refs/remotes",
+    ]);
+  });
+
+  it("drops the origin/HEAD alias, which is not a useful start point", async () => {
+    mock.stdout = "main\norigin/HEAD\norigin/main\n";
+    expect(await listStartPoints("/repo")).toEqual(["main", "origin/main"]);
+  });
+
+  it("returns nothing rather than throwing when git fails", async () => {
+    mock.fail = true;
+    expect(await listStartPoints("/repo")).toEqual([]);
   });
 });

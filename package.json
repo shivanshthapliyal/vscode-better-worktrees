@@ -2,7 +2,7 @@
   "name": "better-worktrees",
   "displayName": "Better Worktrees",
   "description": "Manage git worktrees from the Explorer: live status, Source Control scoping, and safe removal.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "shivanshthapliyal",
   "license": "MIT",
   "repository": {
@@ -33,6 +33,12 @@
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
+      {
+        "command": "betterWorktrees.createWorktree",
+        "title": "New Worktree...",
+        "category": "Worktrees",
+        "icon": "$(add)"
+      },
       {
         "command": "betterWorktrees.openWorktree",
         "title": "Open Worktree...",
@@ -154,14 +160,19 @@
     "menus": {
       "view/title": [
         {
-          "command": "betterWorktrees.showAllWorktreesInSourceControl",
+          "command": "betterWorktrees.createWorktree",
           "when": "view == betterWorktrees.worktrees",
           "group": "navigation@1"
         },
         {
-          "command": "betterWorktrees.refreshWorktrees",
+          "command": "betterWorktrees.showAllWorktreesInSourceControl",
           "when": "view == betterWorktrees.worktrees",
           "group": "navigation@2"
+        },
+        {
+          "command": "betterWorktrees.refreshWorktrees",
+          "when": "view == betterWorktrees.worktrees",
+          "group": "navigation@3"
         }
       ],
       "view/item/context": [
@@ -236,14 +247,24 @@
           "group": "5_manage@2"
         },
         {
-          "command": "betterWorktrees.addWorktreesToSourceControl",
+          "command": "betterWorktrees.createWorktree",
+          "when": "view == betterWorktrees.worktrees && viewItem == repo",
+          "group": "inline@1"
+        },
+        {
+          "command": "betterWorktrees.createWorktree",
           "when": "view == betterWorktrees.worktrees && viewItem == repo",
           "group": "1_repo@1"
         },
         {
-          "command": "betterWorktrees.pruneWorktrees",
+          "command": "betterWorktrees.addWorktreesToSourceControl",
           "when": "view == betterWorktrees.worktrees && viewItem == repo",
           "group": "1_repo@2"
+        },
+        {
+          "command": "betterWorktrees.pruneWorktrees",
+          "when": "view == betterWorktrees.worktrees && viewItem == repo",
+          "group": "1_repo@3"
         }
       ]
     },
@@ -315,6 +336,11 @@
           "default": 3,
           "minimum": 0,
           "markdownDescription": "How many directory levels deep to search each workspace folder for git repositories. `0` scans only the workspace folder root; higher values discover repos nested inside it. Directories such as `node_modules`, `dist`, and `.venv` are always skipped."
+        },
+        "betterWorktrees.worktreePathTemplate": {
+          "type": "string",
+          "default": "${repoPath}/../${repoName}-${branch}",
+          "markdownDescription": "Where `New Worktree...` suggests putting a new worktree. The suggestion is always shown and can be edited before anything is created.\n\nPlaceholders: `${repoPath}` (absolute path of the repository), `${repoName}` (its directory name), and `${branch}` (the new branch, with slashes flattened to hyphens so it stays a single directory). A leading `~` expands to your home directory, and a relative path resolves against the repository.\n\nFor example, `~/.worktrees/${repoName}/${branch}` collects every worktree under one directory."
         }
       }
     }

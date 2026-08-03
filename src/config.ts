@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { DEFAULT_WORKTREE_PATH_TEMPLATE } from "./worktreePath";
 
 /**
  * Every setting this extension reads, in one place. Settings are looked up on
@@ -29,4 +30,11 @@ export function openWorktreeIn(): OpenTarget {
 export function scanDepth(): number {
   const value = settings().get<number>("scanDepth", DEFAULT_SCAN_DEPTH);
   return Number.isFinite(value) && value >= 0 ? value : DEFAULT_SCAN_DEPTH;
+}
+
+export function worktreePathTemplate(): string {
+  return settings().get<string>(
+    "worktreePathTemplate",
+    DEFAULT_WORKTREE_PATH_TEMPLATE,
+  );
 }

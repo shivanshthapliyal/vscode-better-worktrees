@@ -2,13 +2,11 @@
 
 A Worktrees view for the Explorer sidebar, for people who keep several git worktrees checked out at once.
 
-## Why I built this
-
-I usually have a handful of worktrees going at the same time — one per review, a couple of long-running experiments, a hotfix I had to jump on. After a while I could never remember which one had uncommitted work in it, or which one the window I was looking at was even open on. The Source Control view listed them all at once with no way to focus on one, so answering either question meant dropping into a terminal and running `git worktree list` for the tenth time that day.
-
-So I built the view I wanted: every worktree in one place, its state visible at a glance, and the handful of things I actually do to them a click away. It doesn't create worktrees — my shell aliases already handle that — it just makes the ones I already have pleasant to live with.
+Keeping several worktrees open at the same time makes two questions hard to answer without dropping into a terminal: which one has uncommitted work, and which one the current window is on. The Source Control view lists them all at once with no way to focus on a single one. This puts every worktree in one place, shows its state at a glance, and keeps the common actions a click away.
 
 ## Features
+
+**Create a worktree without leaving the editor.** *New Worktree...* asks for a branch name, what to start it from, and where to put it. The destination is suggested from a template you control and shown for editing before anything is written, so worktrees land where you keep them rather than where the extension guessed. Branch names are validated by git itself, and slashes are flattened in the directory name so `feat/api` stays a single folder.
 
 **See the state of every worktree.** Each row shows uncommitted change count, how far ahead or behind upstream it is, and a marker for the worktree the current window has open. Stale worktrees — ones git reports as prunable because their directory is gone — are flagged rather than shown as ordinary checkouts.
 
@@ -40,10 +38,19 @@ Or from the editor: **Extensions → … → Install from VSIX**.
 | `betterWorktrees.showNotifications` | `true` | Show success notifications. Warnings and errors are always shown. |
 | `betterWorktrees.openWorktreeIn` | `newWindow` | Where the open actions put a worktree. |
 | `betterWorktrees.scanDepth` | `3` | How deep to search each workspace folder for git repositories. |
+| `betterWorktrees.worktreePathTemplate` | `${repoPath}/../${repoName}-${branch}` | Where new worktrees are suggested. |
+
+### Worktree location
+
+`worktreePathTemplate` understands `${repoPath}`, `${repoName}` and `${branch}`. A leading `~` expands to your home directory, and a relative template resolves against the repository. The default puts a worktree beside the repo; to collect them all in one place instead:
+
+```json
+"betterWorktrees.worktreePathTemplate": "~/.worktrees/${repoName}/${branch}"
+```
 
 ## Notes
 
-Worktree creation is deliberately out of scope — this manages the worktrees your existing tooling creates.
+Creation covers new branches only. Checking out an existing branch into a worktree, tracking a remote one, or a detached checkout are all still terminal jobs — the flow stays a single path rather than a mode picker.
 
 The extension registers worktrees with the built-in Git extension through the `git.openRepository` command rather than the Git API method of the same name, because only the command reopens a repository that was previously closed. Narrowing the Source Control view works by closing the other repositories, since no API exists to select a repository row; every close is reversible through *Show All Worktrees in Source Control*.
 
@@ -65,6 +72,7 @@ src/
   types.ts        shared shapes, imports nothing
   config.ts       every setting, read in one place
   display.ts      labels, badges, paths, sort order
+  worktreePath.ts where a new worktree goes, template expansion
   removal.ts      the safety rules for remove and prune
   repoManager.ts  what worktrees exist, plus the file watcher
   git/            cli.ts (git invocations), porcelain.ts (parsing),

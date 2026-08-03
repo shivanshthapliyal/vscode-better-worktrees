@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { registerClipboardCommands } from "./clipboard";
 import { CommandContext } from "./context";
+import { registerCreateCommands } from "./create";
 import { registerLifecycleCommands } from "./lifecycle";
 import { registerOpenCommands } from "./open";
 import { registerSourceControlCommands } from "./sourceControl";
@@ -15,6 +16,7 @@ export { CommandContext } from "./context";
  */
 export function registerCommands(ctx: CommandContext): vscode.Disposable[] {
   return [
+    ...registerCreateCommands(ctx),
     ...registerOpenCommands(ctx),
     ...registerClipboardCommands(),
     ...registerWorkspaceCommands(),

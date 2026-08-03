@@ -146,7 +146,7 @@ async function openNode(
   }
 }
 
-async function openFolder(
+export async function openFolder(
   fsPath: string,
   forceNewWindow: boolean,
 ): Promise<void> {

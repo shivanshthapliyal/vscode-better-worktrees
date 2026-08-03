@@ -100,6 +100,79 @@ export async function pruneWorktrees(repoPath: string): Promise<void> {
   await execFileAsync("git", ["-C", repoPath, "worktree", "prune"]);
 }
 
+/**
+ * Creates a worktree on a new branch. Errors are deliberately not swallowed:
+ * git refuses clearly when the branch already exists or the target directory
+ * is occupied, and that message is more useful than anything invented here.
+ */
+export async function createWorktree(
+  repoPath: string,
+  worktreePath: string,
+  branch: string,
+  startPoint: string,
+): Promise<void> {
+  await execFileAsync("git", [
+    "-C",
+    repoPath,
+    "worktree",
+    "add",
+    "-b",
+    branch,
+    "--",
+    worktreePath,
+    startPoint,
+  ]);
+}
+
+/**
+ * Whether git would accept this as a branch name. The rules are fiddly enough
+ * (no `..`, no trailing `.lock`, no control characters, and more) that asking
+ * git is both shorter and correct where a hand-rolled pattern drifts.
+ */
+export async function isValidBranchName(
+  repoPath: string,
+  name: string,
+): Promise<boolean> {
+  // check-ref-format takes no `--` separator, so a dash-leading name would be
+  // read as an option. Such a name is invalid anyway; reject it here.
+  if (name.startsWith("-")) {
+    return false;
+  }
+  try {
+    await execFileAsync("git", [
+      "-C",
+      repoPath,
+      "check-ref-format",
+      "--branch",
+      name,
+    ]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Local and remote refs offered as the start point for a new branch. */
+export async function listStartPoints(repoPath: string): Promise<string[]> {
+  try {
+    const { stdout } = await execFileAsync("git", [
+      "-C",
+      repoPath,
+      "for-each-ref",
+      "--format=%(refname:short)",
+      "refs/heads",
+      "refs/remotes",
+    ]);
+    return stdout
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line !== "" && !line.endsWith("/HEAD"));
+  } catch (error) {
+    log(`Failed to list refs in ${repoPath}: ${String(error)}`);
+    return [];
+  }
+}
+
 export async function setWorktreeLock(
   repoPath: string,
   worktreePath: string,
