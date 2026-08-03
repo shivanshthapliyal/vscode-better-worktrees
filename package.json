@@ -1,0 +1,339 @@
+{
+  "name": "better-worktrees",
+  "displayName": "Better Worktrees",
+  "description": "Manage git worktrees from the Explorer: live status, Source Control scoping, and safe removal.",
+  "version": "0.1.0",
+  "publisher": "shivanshthapliyal",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shivanshthapliyal/vscode-better-worktrees.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shivanshthapliyal/vscode-better-worktrees/issues"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "SCM Providers",
+    "Other"
+  ],
+  "keywords": [
+    "git",
+    "worktree",
+    "worktrees",
+    "source control",
+    "scm",
+    "branch"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "betterWorktrees.openWorktree",
+        "title": "Open Worktree...",
+        "category": "Worktrees"
+      },
+      {
+        "command": "betterWorktrees.refreshWorktrees",
+        "title": "Refresh Worktrees",
+        "category": "Worktrees",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "betterWorktrees.addWorktreesToSourceControl",
+        "title": "Add Worktrees to Source Control",
+        "category": "Worktrees",
+        "icon": "$(source-control)"
+      },
+      {
+        "command": "betterWorktrees.showAllWorktreesInSourceControl",
+        "title": "Show All Worktrees in Source Control",
+        "category": "Worktrees",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "betterWorktrees.pruneWorktrees",
+        "title": "Prune Stale Worktrees",
+        "category": "Worktrees",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "betterWorktrees.worktree.revealInSourceControl",
+        "title": "Show Only This Worktree in Source Control",
+        "category": "Worktrees",
+        "icon": "$(source-control)"
+      },
+      {
+        "command": "betterWorktrees.worktree.revealInExplorerView",
+        "title": "Show in Explorer View",
+        "category": "Worktrees",
+        "icon": "$(list-tree)"
+      },
+      {
+        "command": "betterWorktrees.worktree.openTerminal",
+        "title": "Open Terminal at Worktree",
+        "category": "Worktrees",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "betterWorktrees.worktree.openInNewWindow",
+        "title": "Open in New Window",
+        "category": "Worktrees",
+        "icon": "$(empty-window)"
+      },
+      {
+        "command": "betterWorktrees.worktree.openInCurrentWindow",
+        "title": "Open in Current Window",
+        "category": "Worktrees",
+        "icon": "$(window)"
+      },
+      {
+        "command": "betterWorktrees.worktree.addToWorkspace",
+        "title": "Add Worktree to Workspace",
+        "category": "Worktrees",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "betterWorktrees.worktree.removeFromWorkspace",
+        "title": "Remove Worktree from Workspace",
+        "category": "Worktrees",
+        "icon": "$(close)"
+      },
+      {
+        "command": "betterWorktrees.worktree.reveal",
+        "title": "Reveal in File Explorer",
+        "category": "Worktrees",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "betterWorktrees.worktree.copyPath",
+        "title": "Copy Worktree Path",
+        "category": "Worktrees",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "betterWorktrees.worktree.copyBranch",
+        "title": "Copy Branch Name",
+        "category": "Worktrees",
+        "icon": "$(git-branch)"
+      },
+      {
+        "command": "betterWorktrees.worktree.toggleLock",
+        "title": "Lock / Unlock Worktree",
+        "category": "Worktrees",
+        "icon": "$(lock)"
+      },
+      {
+        "command": "betterWorktrees.worktree.remove",
+        "title": "Remove Worktree...",
+        "category": "Worktrees",
+        "icon": "$(trash)"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "betterWorktrees.worktrees",
+          "name": "Worktrees",
+          "icon": "$(git-branch)",
+          "contextualTitle": "Worktrees"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "betterWorktrees.worktrees",
+        "contents": "No git worktrees found in this workspace.\nOpen a folder that is part of a git repository to see its worktrees here."
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "betterWorktrees.showAllWorktreesInSourceControl",
+          "when": "view == betterWorktrees.worktrees",
+          "group": "navigation@1"
+        },
+        {
+          "command": "betterWorktrees.refreshWorktrees",
+          "when": "view == betterWorktrees.worktrees",
+          "group": "navigation@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "betterWorktrees.worktree.revealInExplorerView",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /^worktree/",
+          "group": "inline@1"
+        },
+        {
+          "command": "betterWorktrees.worktree.openTerminal",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /^worktree/",
+          "group": "inline@2"
+        },
+        {
+          "command": "betterWorktrees.worktree.revealInSourceControl",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /^worktree/",
+          "group": "1_open@1"
+        },
+        {
+          "command": "betterWorktrees.worktree.openInCurrentWindow",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /^worktree/",
+          "group": "1_open@2"
+        },
+        {
+          "command": "betterWorktrees.worktree.openInNewWindow",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /^worktree/",
+          "group": "1_open@3"
+        },
+        {
+          "command": "betterWorktrees.worktree.revealInExplorerView",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /^worktree/",
+          "group": "2_workspace@1"
+        },
+        {
+          "command": "betterWorktrees.worktree.addToWorkspace",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /^worktree/",
+          "group": "2_workspace@2"
+        },
+        {
+          "command": "betterWorktrees.worktree.removeFromWorkspace",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /^worktree/",
+          "group": "2_workspace@3"
+        },
+        {
+          "command": "betterWorktrees.worktree.openTerminal",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /^worktree/",
+          "group": "3_actions@1"
+        },
+        {
+          "command": "betterWorktrees.worktree.reveal",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /^worktree/",
+          "group": "3_actions@2"
+        },
+        {
+          "command": "betterWorktrees.worktree.copyPath",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /^worktree/",
+          "group": "4_copy@1"
+        },
+        {
+          "command": "betterWorktrees.worktree.copyBranch",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /^worktree/",
+          "group": "4_copy@2"
+        },
+        {
+          "command": "betterWorktrees.worktree.toggleLock",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /\\.lockable/",
+          "group": "5_manage@1"
+        },
+        {
+          "command": "betterWorktrees.worktree.remove",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /\\.removable/",
+          "group": "5_manage@2"
+        },
+        {
+          "command": "betterWorktrees.addWorktreesToSourceControl",
+          "when": "view == betterWorktrees.worktrees && viewItem == repo",
+          "group": "1_repo@1"
+        },
+        {
+          "command": "betterWorktrees.pruneWorktrees",
+          "when": "view == betterWorktrees.worktrees && viewItem == repo",
+          "group": "1_repo@2"
+        }
+      ]
+    },
+    "colors": [
+      {
+        "id": "betterWorktrees.worktreeColor1",
+        "description": "Worktree colour 1",
+        "defaults": { "dark": "#4FC1FF", "light": "#0067C0", "highContrast": "#4FC1FF" }
+      },
+      {
+        "id": "betterWorktrees.worktreeColor2",
+        "description": "Worktree colour 2",
+        "defaults": { "dark": "#73C991", "light": "#107C10", "highContrast": "#73C991" }
+      },
+      {
+        "id": "betterWorktrees.worktreeColor3",
+        "description": "Worktree colour 3",
+        "defaults": { "dark": "#E2C08D", "light": "#B8860B", "highContrast": "#E2C08D" }
+      },
+      {
+        "id": "betterWorktrees.worktreeColor4",
+        "description": "Worktree colour 4",
+        "defaults": { "dark": "#F48771", "light": "#D13438", "highContrast": "#F48771" }
+      },
+      {
+        "id": "betterWorktrees.worktreeColor5",
+        "description": "Worktree colour 5",
+        "defaults": { "dark": "#C586C0", "light": "#8E44AD", "highContrast": "#C586C0" }
+      },
+      {
+        "id": "betterWorktrees.worktreeColor6",
+        "description": "Worktree colour 6",
+        "defaults": { "dark": "#4EC9B0", "light": "#008272", "highContrast": "#4EC9B0" }
+      },
+      {
+        "id": "betterWorktrees.worktreeColor7",
+        "description": "Worktree colour 7",
+        "defaults": { "dark": "#CE9178", "light": "#A1602F", "highContrast": "#CE9178" }
+      },
+      {
+        "id": "betterWorktrees.worktreeColor8",
+        "description": "Worktree colour 8",
+        "defaults": { "dark": "#9CDCFE", "light": "#3B78BD", "highContrast": "#9CDCFE" }
+      }
+    ],
+    "configuration": {
+      "title": "Better Worktrees",
+      "properties": {
+        "betterWorktrees.showNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show success notifications. Warnings and errors are always shown."
+        },
+        "betterWorktrees.openWorktreeIn": {
+          "type": "string",
+          "enum": [
+            "newWindow",
+            "currentWindow"
+          ],
+          "enumDescriptions": [
+            "Open the worktree in a new window.",
+            "Open the worktree in the current window, replacing the current folder."
+          ],
+          "default": "newWindow",
+          "markdownDescription": "Default target for `Open Worktree...` and the worktree open actions. Clicking a worktree row narrows the Source Control view to that worktree instead; use `Show All Worktrees in Source Control` to restore the others."
+        },
+        "betterWorktrees.scanDepth": {
+          "type": "number",
+          "default": 3,
+          "minimum": 0,
+          "markdownDescription": "How many directory levels deep to search each workspace folder for git repositories. `0` scans only the workspace folder root; higher values discover repos nested inside it. Directories such as `node_modules`, `dist`, and `.venv` are always skipped."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test": "vitest run",
+    "lint": "eslint src --ext ts",
+    "package": "npx @vscode/vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "2.22.0",
+    "eslint": "^10.6.0",
+    "typescript": "^5.3.0",
+    "typescript-eslint": "^8.62.1",
+    "vitest": "^4.1.9"
+  }
+}
