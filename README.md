@@ -4,6 +4,22 @@ Git worktrees in the Explorer sidebar — create, inspect, and switch between th
 
 Worktrees let you keep several branches checked out at once, but the editor gives you little to manage them with. Two questions in particular are hard to answer at a glance: which worktree has uncommitted work, and which one the current window is actually on. The built-in Source Control view lists them all at once with no way to focus. Better Worktrees puts every worktree in one place, surfaces its state inline, and keeps the common actions one click away.
 
+## At a glance
+
+The **Worktrees** view sits in the Explorer sidebar, grouped by repository. Each row shows its state inline, and a right-click opens the full set of actions.
+
+![The Worktrees view in the Explorer sidebar, showing several worktrees with their status and the context menu](docs/worktrees-view.png)
+
+Every row tells you what you need without opening it:
+
+- **`● main` — current** — the green dot marks the worktree the active window has open.
+- **`3●`** — three uncommitted changes; **`↑2` / `↓2`** — commits ahead of / behind upstream.
+- **`🔒 locked`** — a locked worktree, protected from removal.
+- **`⚠ stale`** — git reports the directory as gone; prune it to clean up.
+- The muted text on the right is the location — relative to the repo when it lives inside it, home-shortened otherwise.
+
+Click any row to focus the Source Control view on that worktree; right-click for the full action menu.
+
 ## Features
 
 - **Create without leaving the editor.** *New Worktree...* walks through a branch name, a start point, and a destination. The destination is suggested from a template you control and shown for editing before anything is written, so worktrees land where you keep them. Branch names are validated by git itself, and slashes are flattened in the directory name so `feat/api` stays a single folder.
