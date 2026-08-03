@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0
+
+- Create a worktree from the view: *New Worktree...* prompts for a branch, a start point, and a destination
+- Destination is suggested from `betterWorktrees.worktreePathTemplate` (`${repoPath}`, `${repoName}`, `${branch}`) and shown for editing before anything is written
+- Branch names validated by `git check-ref-format`; slashes flattened to a single path segment
+- New worktree is opened only when asked, not automatically
+
 ## 0.1.0
 
 Initial release.
