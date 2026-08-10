@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- Fix worktree status colours flickering: refreshes now repaint only when a worktree's status actually changed, and the filesystem watcher no longer reacts to git's own inner index writes
+
 ## 0.2.0
 
 - Create a worktree from the view: *New Worktree...* prompts for a branch, a start point, and a destination
