@@ -11,6 +11,27 @@ import { RepoGroup, Worktree, WorktreeStatus } from "./types";
 
 const REFRESH_DEBOUNCE_MS = 300;
 
+function statusesEqual(
+  a: Map<string, WorktreeStatus>,
+  b: Map<string, WorktreeStatus>,
+): boolean {
+  if (a.size !== b.size) {
+    return false;
+  }
+  for (const [key, value] of a) {
+    const other = b.get(key);
+    if (
+      other === undefined ||
+      other.dirtyCount !== value.dirtyCount ||
+      other.ahead !== value.ahead ||
+      other.behind !== value.behind
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
 /**
  * The single source of truth for what worktrees exist. Scans the workspace for
  * repositories, groups their worktrees by shared git directory, watches for
@@ -144,11 +165,21 @@ export class RepoManager {
       return;
     }
 
-    this.statuses = new Map(
+    const next = new Map(
       results
         .filter((entry) => entry.status !== undefined)
         .map((entry) => [entry.path, entry.status as WorktreeStatus]),
     );
+
+    // Only notify when a status actually moved. A refresh triggered by a
+    // watcher event often finds every worktree unchanged; firing anyway forces
+    // the decoration provider to re-query and repaint colours that never
+    // change on a status load, which reads as flicker.
+    if (statusesEqual(this.statuses, next)) {
+      return;
+    }
+
+    this.statuses = next;
     this.changeEmitter.fire();
   }
 
@@ -156,6 +187,15 @@ export class RepoManager {
    * Watches each repository's `$GIT_COMMON_DIR/worktrees` directory, which git
    * writes to on `worktree add` and clears on `worktree remove`. Without this
    * the view only updates on manual refresh or a workspace folder change.
+   *
+   * The pattern is `worktrees/*` — a single segment — so it matches only the
+   * per-worktree entry directories that `worktree add`/`remove` create and
+   * delete. It deliberately does NOT match `worktrees/**`: git rewrites the
+   * `index`, `logs/`, and `index.lock` files one level deeper on ordinary
+   * reads, including the `git status` this extension itself runs each refresh.
+   * Watching those inner files created a feedback loop — status churn fired the
+   * watcher, which refreshed, which ran status again — that repainted the
+   * decoration colours without end.
    */
   private syncWatchers(): void {
     const commonDirs = new Set(this.repos.map((repo) => repo.commonDir));
@@ -171,7 +211,7 @@ export class RepoManager {
 
     for (const commonDir of commonDirs) {
       const watcher = vscode.workspace.createFileSystemWatcher(
-        new vscode.RelativePattern(vscode.Uri.file(commonDir), "worktrees/**"),
+        new vscode.RelativePattern(vscode.Uri.file(commonDir), "worktrees/*"),
         false,
         true,
         false,
