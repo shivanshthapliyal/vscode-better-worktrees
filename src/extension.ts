@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { registerCommands } from "./commands";
+import { registerViewCommands } from "./commands/view";
 import {
   createGitRepositoryRegistry,
   GitRepositoryRegistry,
@@ -33,6 +34,7 @@ export function activate(context: vscode.ExtensionContext): void {
       repos,
       getRegistry: createRegistryProvider(),
     }),
+    ...registerViewCommands(treeProvider),
   );
 
   void repos.refresh();

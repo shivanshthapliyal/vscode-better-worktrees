@@ -1,10 +1,13 @@
 import { homedir } from "node:os";
+import path from "node:path";
 import * as vscode from "vscode";
+import { sortDirtyFirst } from "../config";
 import {
   formatWorktreeLabel,
   formatWorktreeLocation,
   shortenHomePath,
   sortWorktreesForDisplay,
+  worktreeMatchesFilter,
 } from "../display";
 import { checkWorktreeRemovable, RemovalContext } from "../removal";
 import { RepoManager } from "../repoManager";
@@ -36,14 +39,39 @@ export class WorktreeTreeProvider
   private readonly changeEmitter = new vscode.EventEmitter<
     WorktreeNode | undefined
   >();
-  private readonly subscription: vscode.Disposable;
+  private readonly subscriptions: vscode.Disposable[] = [];
+  private filter = "";
 
   readonly onDidChangeTreeData = this.changeEmitter.event;
 
   constructor(private readonly repos: RepoManager) {
-    this.subscription = this.repos.onDidChange(() =>
-      this.changeEmitter.fire(undefined),
+    this.subscriptions.push(
+      this.repos.onDidChange(() => this.changeEmitter.fire(undefined)),
+      vscode.workspace.onDidChangeConfiguration((event) => {
+        if (event.affectsConfiguration("betterWorktrees.sortDirtyFirst")) {
+          this.changeEmitter.fire(undefined);
+        }
+      }),
     );
+  }
+
+  /** Sets the branch/path substring the tree filters rows by; empty clears it. */
+  setFilter(filter: string): void {
+    const next = filter.trim();
+    if (next === this.filter) {
+      return;
+    }
+    this.filter = next;
+    void vscode.commands.executeCommand(
+      "setContext",
+      "betterWorktrees.filterActive",
+      next !== "",
+    );
+    this.changeEmitter.fire(undefined);
+  }
+
+  getFilter(): string {
+    return this.filter;
   }
 
   getChildren(node?: WorktreeNode): WorktreeNode[] {
@@ -52,13 +80,38 @@ export class WorktreeTreeProvider
     }
 
     if (node.kind === "repo") {
-      return sortWorktreesForDisplay(
-        node.repo.worktrees,
-        node.repo.rootPath,
-      ).map((worktree) => ({ kind: "worktree", repo: node.repo, worktree }));
+      const visible = node.repo.worktrees.filter((worktree) =>
+        worktreeMatchesFilter(worktree, this.filter),
+      );
+      return this.sortForRepo(visible, node.repo).map((worktree) => ({
+        kind: "worktree",
+        repo: node.repo,
+        worktree,
+      }));
     }
 
     return [];
+  }
+
+  private sortForRepo(
+    worktrees: readonly Worktree[],
+    repo: RepoGroup,
+  ): Worktree[] {
+    const dirtyPaths = sortDirtyFirst()
+      ? new Set(
+          worktrees
+            .filter(
+              (worktree) =>
+                (this.repos.getStatus(worktree.path)?.dirtyCount ?? 0) > 0,
+            )
+            .map((worktree) => path.resolve(worktree.path)),
+        )
+      : undefined;
+
+    return sortWorktreesForDisplay(worktrees, {
+      currentPath: repo.rootPath,
+      dirtyPaths,
+    });
   }
 
   getTreeItem(node: WorktreeNode): vscode.TreeItem {
@@ -117,7 +170,7 @@ export class WorktreeTreeProvider
   }
 
   dispose(): void {
-    this.subscription.dispose();
+    this.subscriptions.forEach((subscription) => subscription.dispose());
     this.changeEmitter.dispose();
   }
 }

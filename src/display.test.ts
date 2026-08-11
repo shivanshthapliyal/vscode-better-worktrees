@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  BranchType,
+  DEFAULT_BRANCH_TYPE_MAP,
+  branchTypeColorId,
+  branchTypeForBranch,
   formatWorktreeLabel,
   formatWorktreeLocation,
   paletteIndexForKey,
@@ -7,6 +11,7 @@ import {
   sortWorktreesForDisplay,
   worktreeBadge,
   worktreeColorKey,
+  worktreeMatchesFilter,
 } from "./display";
 import { Worktree } from "./types";
 
@@ -99,6 +104,80 @@ describe("sortWorktreesForDisplay", () => {
       "/r/bare",
     ]);
   });
+
+  it("accepts the options object form and behaves like the string form", () => {
+    const worktrees: Worktree[] = [
+      makeWorktree({ path: "/r/main", branch: "main" }),
+      makeWorktree({ path: "/r/feature", branch: "feature" }),
+    ];
+
+    const viaString = sortWorktreesForDisplay(worktrees, "/r/feature");
+    const viaObject = sortWorktreesForDisplay(worktrees, {
+      currentPath: "/r/feature",
+    });
+
+    expect(viaObject.map((w) => w.path)).toEqual(viaString.map((w) => w.path));
+  });
+
+  it("surfaces dirty worktrees ahead of clean ones when asked", () => {
+    const worktrees: Worktree[] = [
+      makeWorktree({ path: "/r/apple", branch: "apple" }),
+      makeWorktree({ path: "/r/banana", branch: "banana" }),
+      makeWorktree({ path: "/r/cherry", branch: "cherry" }),
+    ];
+
+    const sorted = sortWorktreesForDisplay(worktrees, {
+      dirtyPaths: new Set(["/r/cherry"]),
+    });
+
+    // cherry is dirty so it leads; the clean rest stay alphabetical.
+    expect(sorted.map((w) => w.path)).toEqual([
+      "/r/cherry",
+      "/r/apple",
+      "/r/banana",
+    ]);
+  });
+
+  it("keeps the current worktree first even when another is dirty", () => {
+    const worktrees: Worktree[] = [
+      makeWorktree({ path: "/r/apple", branch: "apple" }),
+      makeWorktree({ path: "/r/banana", branch: "banana" }),
+    ];
+
+    const sorted = sortWorktreesForDisplay(worktrees, {
+      currentPath: "/r/apple",
+      dirtyPaths: new Set(["/r/banana"]),
+    });
+
+    expect(sorted.map((w) => w.path)).toEqual(["/r/apple", "/r/banana"]);
+  });
+});
+
+describe("worktreeMatchesFilter", () => {
+  it("matches everything when the filter is blank", () => {
+    expect(worktreeMatchesFilter(makeWorktree({ branch: "feat/x" }), "")).toBe(
+      true,
+    );
+    expect(
+      worktreeMatchesFilter(makeWorktree({ branch: "feat/x" }), "   "),
+    ).toBe(true);
+  });
+
+  it("matches on a branch substring, case-insensitively", () => {
+    const worktree = makeWorktree({ branch: "feat/new-login" });
+    expect(worktreeMatchesFilter(worktree, "login")).toBe(true);
+    expect(worktreeMatchesFilter(worktree, "LOGIN")).toBe(true);
+    expect(worktreeMatchesFilter(worktree, "release")).toBe(false);
+  });
+
+  it("matches on a path fragment when the branch does not", () => {
+    const worktree = makeWorktree({
+      path: "/home/dev/worktrees/hotfix",
+      branch: "main",
+    });
+    expect(worktreeMatchesFilter(worktree, "worktrees")).toBe(true);
+    expect(worktreeMatchesFilter(worktree, "hotfix")).toBe(true);
+  });
 });
 
 describe("badges and colours", () => {
@@ -110,12 +189,38 @@ describe("badges and colours", () => {
   });
 
   it("assigns a stable palette index within range for a key", () => {
-    const first = paletteIndexForKey("feature/login", 8);
-    const second = paletteIndexForKey("feature/login", 8);
+    const first = paletteIndexForKey("feature/login", 20);
+    const second = paletteIndexForKey("feature/login", 20);
 
     expect(first).toBe(second);
     expect(first).toBeGreaterThanOrEqual(0);
-    expect(first).toBeLessThan(8);
+    expect(first).toBeLessThan(20);
+  });
+
+  it("spreads a set of branches across most of the palette", () => {
+    const branches = [
+      "main",
+      "develop",
+      "feat/login",
+      "feat/signup",
+      "fix/crash",
+      "fix/typo",
+      "release/1.0",
+      "chore/deps",
+      "user/login-fix",
+      "user/dark-mode",
+      "bot/nightly-build",
+      "bot/cache-warmup",
+      "wip/spike",
+      "docs/readme",
+      "perf/query",
+    ];
+    const indices = new Set(
+      branches.map((b) => paletteIndexForKey(b, 20)),
+    );
+    // With 20 slots and 15 distinct keys, a good hash should land on many
+    // different colours rather than clustering onto a handful.
+    expect(indices.size).toBeGreaterThanOrEqual(10);
   });
 
   it("keys worktree colour by branch, falling back to path", () => {
@@ -123,6 +228,96 @@ describe("badges and colours", () => {
     expect(
       worktreeColorKey(makeWorktree({ path: "/r/detached", isDetached: true })),
     ).toBe("/r/detached");
+  });
+});
+
+describe("branchTypeForBranch", () => {
+  it("maps known leading segments to their type", () => {
+    expect(branchTypeForBranch("main")).toBe("main");
+    expect(branchTypeForBranch("master")).toBe("main");
+    expect(branchTypeForBranch("feat/login")).toBe("feature");
+    expect(branchTypeForBranch("feature/login")).toBe("feature");
+    expect(branchTypeForBranch("fix/crash")).toBe("fix");
+    expect(branchTypeForBranch("hotfix/urgent")).toBe("fix");
+    expect(branchTypeForBranch("release/1.2.0")).toBe("release");
+    expect(branchTypeForBranch("chore/deps")).toBe("chore");
+    expect(branchTypeForBranch("docs/readme")).toBe("chore");
+  });
+
+  it("matches prefixes case-insensitively", () => {
+    expect(branchTypeForBranch("FEAT/login")).toBe("feature");
+    expect(branchTypeForBranch("HotFix/x")).toBe("fix");
+  });
+
+  it("falls back to other for unknown prefixes and missing branches", () => {
+    expect(branchTypeForBranch("wip/experiment")).toBe("other");
+    expect(branchTypeForBranch("PROJ-123")).toBe("other");
+    expect(branchTypeForBranch(undefined)).toBe("other");
+  });
+
+  it("detects a type keyword anywhere in an author- or workflow-prefixed branch", () => {
+    expect(branchTypeForBranch("user/login-crash-fix")).toBe("fix");
+    expect(branchTypeForBranch("user/image-upload-feat")).toBe("feature");
+    expect(branchTypeForBranch("bot/release-1.2")).toBe("release");
+    expect(branchTypeForBranch("someone/update-docs")).toBe("chore");
+  });
+
+  it("leaves genuinely unmatched work branches as other", () => {
+    expect(branchTypeForBranch("user/dashboard-redesign")).toBe("other");
+    expect(branchTypeForBranch("bot/dependency-scan")).toBe("other");
+  });
+
+  it("resolves multiple matches by precedence (fix beats feature)", () => {
+    expect(branchTypeForBranch("feat/urgent-fix")).toBe("fix");
+    expect(branchTypeForBranch("feature/main-nav-fix")).toBe("fix");
+  });
+
+  it("honours a caller-supplied map over the defaults", () => {
+    const map: Record<string, BranchType> = {
+      ...DEFAULT_BRANCH_TYPE_MAP,
+      wip: "chore",
+      epic: "feature",
+    };
+    expect(branchTypeForBranch("wip/spike", map)).toBe("chore");
+    expect(branchTypeForBranch("epic/new-thing", map)).toBe("feature");
+    expect(branchTypeForBranch("feat/x", map)).toBe("feature");
+  });
+});
+
+describe("branchTypeColorId", () => {
+  it("returns a distinct semantic colour id per recognised type", () => {
+    const types: BranchType[] = ["main", "feature", "fix", "release", "chore"];
+    const ids = types.map((t) => branchTypeColorId(t, "irrelevant"));
+    expect(new Set(ids).size).toBe(types.length);
+    ids.forEach((id) =>
+      expect(id.startsWith("betterWorktrees.worktreeType")).toBe(true),
+    );
+  });
+
+  it("ignores the key for recognised types", () => {
+    expect(branchTypeColorId("fix", "a")).toBe(branchTypeColorId("fix", "b"));
+  });
+
+  it("hashes other branches across the orange shades, stably", () => {
+    const a = branchTypeColorId("other", "user/dashboard-redesign");
+    const b = branchTypeColorId("other", "user/dashboard-redesign");
+    expect(a).toBe(b);
+    expect(a).toMatch(/^betterWorktrees\.worktreeTypeOther[1-8]$/);
+  });
+
+  it("spreads different other branches across more than one orange shade", () => {
+    const keys = [
+      "user/dashboard-redesign",
+      "user/dark-mode",
+      "bot/dependency-scan",
+      "wip/spike",
+      "team/describe-contents",
+      "x/random-thing",
+      "y/another-one",
+      "z/and-more",
+    ];
+    const ids = new Set(keys.map((k) => branchTypeColorId("other", k)));
+    expect(ids.size).toBeGreaterThanOrEqual(3);
   });
 });
 
