@@ -2,8 +2,9 @@
   "name": "better-worktrees",
   "displayName": "Better Worktrees",
   "description": "Manage git worktrees from the Explorer: live status, Source Control scoping, and safe removal.",
-  "version": "0.2.1",
+  "version": "0.4.0",
   "publisher": "shivanshthapliyal",
+  "icon": "icon.png",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -38,6 +39,48 @@
         "title": "New Worktree...",
         "category": "Worktrees",
         "icon": "$(add)"
+      },
+      {
+        "command": "betterWorktrees.checkoutWorktree",
+        "title": "Checkout Branch as Worktree...",
+        "category": "Worktrees",
+        "icon": "$(git-branch-create)"
+      },
+      {
+        "command": "betterWorktrees.worktreeFromPullRequest",
+        "title": "Worktree from Pull Request...",
+        "category": "Worktrees",
+        "icon": "$(git-pull-request)"
+      },
+      {
+        "command": "betterWorktrees.filterWorktrees",
+        "title": "Filter Worktrees...",
+        "category": "Worktrees",
+        "icon": "$(search)"
+      },
+      {
+        "command": "betterWorktrees.clearWorktreeFilter",
+        "title": "Clear Worktree Filter",
+        "category": "Worktrees",
+        "icon": "$(search-stop)"
+      },
+      {
+        "command": "betterWorktrees.toggleSortDirtyFirst",
+        "title": "Toggle Dirty-First Sort",
+        "category": "Worktrees",
+        "icon": "$(sort-precedence)"
+      },
+      {
+        "command": "betterWorktrees.worktree.fetch",
+        "title": "Fetch",
+        "category": "Worktrees",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "betterWorktrees.worktree.pull",
+        "title": "Pull (fast-forward)",
+        "category": "Worktrees",
+        "icon": "$(arrow-down)"
       },
       {
         "command": "betterWorktrees.openWorktree",
@@ -165,14 +208,39 @@
           "group": "navigation@1"
         },
         {
+          "command": "betterWorktrees.filterWorktrees",
+          "when": "view == betterWorktrees.worktrees && !betterWorktrees.filterActive",
+          "group": "navigation@2"
+        },
+        {
+          "command": "betterWorktrees.clearWorktreeFilter",
+          "when": "view == betterWorktrees.worktrees && betterWorktrees.filterActive",
+          "group": "navigation@2"
+        },
+        {
           "command": "betterWorktrees.showAllWorktreesInSourceControl",
           "when": "view == betterWorktrees.worktrees",
-          "group": "navigation@2"
+          "group": "navigation@3"
         },
         {
           "command": "betterWorktrees.refreshWorktrees",
           "when": "view == betterWorktrees.worktrees",
-          "group": "navigation@3"
+          "group": "navigation@4"
+        },
+        {
+          "command": "betterWorktrees.checkoutWorktree",
+          "when": "view == betterWorktrees.worktrees",
+          "group": "1_create@1"
+        },
+        {
+          "command": "betterWorktrees.worktreeFromPullRequest",
+          "when": "view == betterWorktrees.worktrees",
+          "group": "1_create@2"
+        },
+        {
+          "command": "betterWorktrees.toggleSortDirtyFirst",
+          "when": "view == betterWorktrees.worktrees",
+          "group": "2_view@1"
         }
       ],
       "view/item/context": [
@@ -227,6 +295,16 @@
           "group": "3_actions@2"
         },
         {
+          "command": "betterWorktrees.worktree.fetch",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /^worktree/",
+          "group": "3_git@1"
+        },
+        {
+          "command": "betterWorktrees.worktree.pull",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /^worktree/",
+          "group": "3_git@2"
+        },
+        {
           "command": "betterWorktrees.worktree.copyPath",
           "when": "view == betterWorktrees.worktrees && viewItem =~ /^worktree/",
           "group": "4_copy@1"
@@ -257,14 +335,24 @@
           "group": "1_repo@1"
         },
         {
-          "command": "betterWorktrees.addWorktreesToSourceControl",
+          "command": "betterWorktrees.checkoutWorktree",
           "when": "view == betterWorktrees.worktrees && viewItem == repo",
           "group": "1_repo@2"
         },
         {
-          "command": "betterWorktrees.pruneWorktrees",
+          "command": "betterWorktrees.worktreeFromPullRequest",
           "when": "view == betterWorktrees.worktrees && viewItem == repo",
           "group": "1_repo@3"
+        },
+        {
+          "command": "betterWorktrees.addWorktreesToSourceControl",
+          "when": "view == betterWorktrees.worktrees && viewItem == repo",
+          "group": "2_repo@1"
+        },
+        {
+          "command": "betterWorktrees.pruneWorktrees",
+          "when": "view == betterWorktrees.worktrees && viewItem == repo",
+          "group": "2_repo@2"
         }
       ]
     },
@@ -308,6 +396,131 @@
         "id": "betterWorktrees.worktreeColor8",
         "description": "Worktree colour 8",
         "defaults": { "dark": "#9CDCFE", "light": "#3B78BD", "highContrast": "#9CDCFE" }
+      },
+      {
+        "id": "betterWorktrees.worktreeColor9",
+        "description": "Worktree colour 9",
+        "defaults": { "dark": "#FF8FA3", "light": "#C5164B", "highContrast": "#FF8FA3" }
+      },
+      {
+        "id": "betterWorktrees.worktreeColor10",
+        "description": "Worktree colour 10",
+        "defaults": { "dark": "#7EE787", "light": "#1A7F37", "highContrast": "#7EE787" }
+      },
+      {
+        "id": "betterWorktrees.worktreeColor11",
+        "description": "Worktree colour 11",
+        "defaults": { "dark": "#FFA657", "light": "#BC4C00", "highContrast": "#FFA657" }
+      },
+      {
+        "id": "betterWorktrees.worktreeColor12",
+        "description": "Worktree colour 12",
+        "defaults": { "dark": "#79C0FF", "light": "#0969DA", "highContrast": "#79C0FF" }
+      },
+      {
+        "id": "betterWorktrees.worktreeColor13",
+        "description": "Worktree colour 13",
+        "defaults": { "dark": "#D2A8FF", "light": "#8250DF", "highContrast": "#D2A8FF" }
+      },
+      {
+        "id": "betterWorktrees.worktreeColor14",
+        "description": "Worktree colour 14",
+        "defaults": { "dark": "#56D4BC", "light": "#0E8A70", "highContrast": "#56D4BC" }
+      },
+      {
+        "id": "betterWorktrees.worktreeColor15",
+        "description": "Worktree colour 15",
+        "defaults": { "dark": "#F2CC60", "light": "#9A6700", "highContrast": "#F2CC60" }
+      },
+      {
+        "id": "betterWorktrees.worktreeColor16",
+        "description": "Worktree colour 16",
+        "defaults": { "dark": "#FF9BCE", "light": "#BF3989", "highContrast": "#FF9BCE" }
+      },
+      {
+        "id": "betterWorktrees.worktreeColor17",
+        "description": "Worktree colour 17",
+        "defaults": { "dark": "#A5D6FF", "light": "#1B62C9", "highContrast": "#A5D6FF" }
+      },
+      {
+        "id": "betterWorktrees.worktreeColor18",
+        "description": "Worktree colour 18",
+        "defaults": { "dark": "#B5E86A", "light": "#4C7A0B", "highContrast": "#B5E86A" }
+      },
+      {
+        "id": "betterWorktrees.worktreeColor19",
+        "description": "Worktree colour 19",
+        "defaults": { "dark": "#E0A3F5", "light": "#9333A8", "highContrast": "#E0A3F5" }
+      },
+      {
+        "id": "betterWorktrees.worktreeColor20",
+        "description": "Worktree colour 20",
+        "defaults": { "dark": "#FF7B72", "light": "#CF222E", "highContrast": "#FF7B72" }
+      },
+      {
+        "id": "betterWorktrees.worktreeTypeMain",
+        "description": "Branch-type colour: main/master/develop (used when colorMode is branchType)",
+        "defaults": { "dark": "#8A9BB8", "light": "#4A5568", "highContrast": "#8A9BB8" }
+      },
+      {
+        "id": "betterWorktrees.worktreeTypeFeature",
+        "description": "Branch-type colour: feature branches — blue (used when colorMode is branchType)",
+        "defaults": { "dark": "#79C0FF", "light": "#0969DA", "highContrast": "#79C0FF" }
+      },
+      {
+        "id": "betterWorktrees.worktreeTypeFix",
+        "description": "Branch-type colour: fix/bugfix/hotfix branches — red (used when colorMode is branchType)",
+        "defaults": { "dark": "#FF7B72", "light": "#CF222E", "highContrast": "#FF7B72" }
+      },
+      {
+        "id": "betterWorktrees.worktreeTypeRelease",
+        "description": "Branch-type colour: release branches — purple (used when colorMode is branchType)",
+        "defaults": { "dark": "#D2A8FF", "light": "#8250DF", "highContrast": "#D2A8FF" }
+      },
+      {
+        "id": "betterWorktrees.worktreeTypeChore",
+        "description": "Branch-type colour: chore/refactor/docs/test branches — green (used when colorMode is branchType)",
+        "defaults": { "dark": "#5FD98A", "light": "#1A7F37", "highContrast": "#5FD98A" }
+      },
+      {
+        "id": "betterWorktrees.worktreeTypeOther1",
+        "description": "Branch-type colour: unrecognised branches, orange shade 1 (used when colorMode is branchType)",
+        "defaults": { "dark": "#FFD7A8", "light": "#B45309", "highContrast": "#FFD7A8" }
+      },
+      {
+        "id": "betterWorktrees.worktreeTypeOther2",
+        "description": "Branch-type colour: unrecognised branches, orange shade 2 (used when colorMode is branchType)",
+        "defaults": { "dark": "#FFC680", "light": "#C2410C", "highContrast": "#FFC680" }
+      },
+      {
+        "id": "betterWorktrees.worktreeTypeOther3",
+        "description": "Branch-type colour: unrecognised branches, orange shade 3 (used when colorMode is branchType)",
+        "defaults": { "dark": "#FFB454", "light": "#D2600A", "highContrast": "#FFB454" }
+      },
+      {
+        "id": "betterWorktrees.worktreeTypeOther4",
+        "description": "Branch-type colour: unrecognised branches, orange shade 4 (used when colorMode is branchType)",
+        "defaults": { "dark": "#FFA657", "light": "#BC4C00", "highContrast": "#FFA657" }
+      },
+      {
+        "id": "betterWorktrees.worktreeTypeOther5",
+        "description": "Branch-type colour: unrecognised branches, orange shade 5 (used when colorMode is branchType)",
+        "defaults": { "dark": "#F59140", "light": "#C2410C", "highContrast": "#F59140" }
+      },
+      {
+        "id": "betterWorktrees.worktreeTypeOther6",
+        "description": "Branch-type colour: unrecognised branches, orange shade 6 (used when colorMode is branchType)",
+        "defaults": { "dark": "#ED7B2E", "light": "#9A3412", "highContrast": "#ED7B2E" }
+      },
+      {
+        "id": "betterWorktrees.worktreeTypeOther7",
+        "description": "Branch-type colour: unrecognised branches, orange shade 7 (used when colorMode is branchType)",
+        "defaults": { "dark": "#E0691F", "light": "#8A3011", "highContrast": "#E0691F" }
+      },
+      {
+        "id": "betterWorktrees.worktreeTypeOther8",
+        "description": "Branch-type colour: unrecognised branches, orange shade 8 (used when colorMode is branchType)",
+        "defaults": { "dark": "#CF5A17", "light": "#7A2A0F", "highContrast": "#CF5A17" }
       }
     ],
     "configuration": {
@@ -341,6 +554,41 @@
           "type": "string",
           "default": "${repoPath}/../${repoName}-${branch}",
           "markdownDescription": "Where `New Worktree...` suggests putting a new worktree. The suggestion is always shown and can be edited before anything is created.\n\nPlaceholders: `${repoPath}` (absolute path of the repository), `${repoName}` (its directory name), and `${branch}` (the new branch, with slashes flattened to hyphens so it stays a single directory). A leading `~` expands to your home directory, and a relative path resolves against the repository.\n\nFor example, `~/.worktrees/${repoName}/${branch}` collects every worktree under one directory."
+        },
+        "betterWorktrees.colorMode": {
+          "type": "string",
+          "enum": [
+            "branch",
+            "branchType"
+          ],
+          "enumDescriptions": [
+            "Give each branch its own stable colour, hashed from the branch name. Different branches are easy to tell apart.",
+            "Colour by branch type (feature, fix, release, ...). All branches of the same type share a colour, so you scan by category."
+          ],
+          "default": "branch",
+          "markdownDescription": "How worktree folders are coloured in the Explorer.\n\n- `branch` — each branch gets a distinct hashed colour from a 20-colour palette (`betterWorktrees.worktreeColor1`–`20`).\n- `branchType` — colour by the branch's type mapped through `#betterWorktrees.branchTypeMap#`, using the `betterWorktrees.worktreeType*` colours.\n\nAll colours are themeable via `workbench.colorCustomizations`."
+        },
+        "betterWorktrees.sortDirtyFirst": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Sort worktrees with uncommitted changes ahead of clean ones (after the current window's worktree). Toggle it from the view title. When off, worktrees are ordered alphabetically."
+        },
+        "betterWorktrees.branchTypeMap": {
+          "type": "object",
+          "scope": "resource",
+          "additionalProperties": {
+            "type": "string",
+            "enum": [
+              "main",
+              "feature",
+              "fix",
+              "release",
+              "chore",
+              "other"
+            ]
+          },
+          "default": {},
+          "markdownDescription": "Overrides for the branch-keyword → type mapping used when `#betterWorktrees.colorMode#` is `branchType`. Each key is a token that may appear anywhere in a branch name (branches are split on `/`, `-`, `_`, and `.`), matched case-insensitively; each value is one of `main`, `feature`, `fix`, `release`, `chore`, `other`.\n\nBecause every token is matched, `user/login-crash-fix` is detected as a **fix** even though `fix` is not the leading segment. When several types match, precedence is `fix` > `release` > `feature` > `chore` > `main`.\n\nEntries here are merged over the built-in defaults (`main`/`master`/`develop`/`trunk` → main, `feat`/`feature` → feature, `fix`/`bugfix`/`hotfix`/`bug`/`patch` → fix, `release`/`rel`/`rc` → release, `chore`/`refactor`/`docs`/`test`/`ci`/`build`/`deps`/`style`/`perf` → chore). For example `{ \"wip\": \"chore\", \"epic\": \"feature\" }` adds two keywords without removing the defaults.\n\nEach type maps to a themeable colour: `betterWorktrees.worktreeTypeMain`, `...Feature`, `...Fix`, `...Release`, `...Chore`, `...Other`."
         }
       }
     }
