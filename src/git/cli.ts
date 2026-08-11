@@ -125,6 +125,182 @@ export async function createWorktree(
 }
 
 /**
+ * Adds a worktree that checks out an existing branch, rather than creating one.
+ * No `-b`: the branch must already exist (local, or a remote-tracking ref git
+ * can set up a local branch for). Errors are left to git, whose message when
+ * the branch is missing or already checked out elsewhere is clearer than any
+ * substitute.
+ */
+export async function addWorktreeForBranch(
+  repoPath: string,
+  worktreePath: string,
+  branch: string,
+): Promise<void> {
+  await execFileAsync("git", [
+    "-C",
+    repoPath,
+    "worktree",
+    "add",
+    "--",
+    worktreePath,
+    branch,
+  ]);
+}
+
+/** A branch offered for checkout into a new worktree. */
+export interface BranchChoice {
+  /** The name to hand to `git worktree add` — a local name or `remote/branch`. */
+  ref: string;
+  /** Whether this is a remote-tracking ref rather than a local branch. */
+  isRemote: boolean;
+  /** True when the branch is already checked out in some worktree. */
+  inWorktree: boolean;
+}
+
+/**
+ * Local and remote branches that could be checked out into a worktree, with the
+ * ones already checked out flagged so the caller can render (and refuse) them.
+ * Remote branches whose name already exists locally are dropped, since the local
+ * one is the branch the user means.
+ */
+export async function listBranchesForCheckout(
+  repoPath: string,
+): Promise<BranchChoice[]> {
+  const [locals, remotes, checkedOut] = await Promise.all([
+    forEachRefShort(repoPath, "refs/heads"),
+    forEachRefShort(repoPath, "refs/remotes"),
+    branchesInWorktrees(repoPath),
+  ]);
+
+  const localNames = new Set(locals);
+  const choices: BranchChoice[] = locals.map((ref) => ({
+    ref,
+    isRemote: false,
+    inWorktree: checkedOut.has(ref),
+  }));
+
+  for (const remote of remotes) {
+    if (remote.endsWith("/HEAD")) {
+      continue;
+    }
+    // origin/feature → feature; skip when a local branch of that name exists,
+    // as checking out the local one is what the user intends.
+    const shortName = remote.slice(remote.indexOf("/") + 1);
+    if (localNames.has(shortName)) {
+      continue;
+    }
+    choices.push({ ref: remote, isRemote: true, inWorktree: false });
+  }
+
+  return choices;
+}
+
+async function forEachRefShort(
+  repoPath: string,
+  ...patterns: string[]
+): Promise<string[]> {
+  try {
+    const { stdout } = await execFileAsync("git", [
+      "-C",
+      repoPath,
+      "for-each-ref",
+      "--format=%(refname:short)",
+      ...patterns,
+    ]);
+    return stdout
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line !== "");
+  } catch (error) {
+    log(`Failed to list refs in ${repoPath}: ${String(error)}`);
+    return [];
+  }
+}
+
+async function branchesInWorktrees(repoPath: string): Promise<Set<string>> {
+  const worktrees = await listWorktrees(repoPath);
+  const branches = new Set<string>();
+  for (const worktree of worktrees) {
+    if (worktree.branch) {
+      branches.add(worktree.branch);
+    }
+  }
+  return branches;
+}
+
+/** Fetches all remotes for the repository behind a worktree, pruning gone refs. */
+export async function fetchWorktree(worktreePath: string): Promise<void> {
+  await execFileAsync("git", [
+    "-C",
+    worktreePath,
+    "fetch",
+    "--all",
+    "--prune",
+  ]);
+}
+
+/**
+ * Fast-forward pulls a worktree. `--ff-only` keeps this a safe, non-interactive
+ * action from a menu: it either advances cleanly or fails, never opening a merge
+ * or leaving the worktree half-merged.
+ */
+export async function pullWorktree(worktreePath: string): Promise<void> {
+  await execFileAsync("git", ["-C", worktreePath, "pull", "--ff-only"]);
+}
+
+/** Whether the GitHub CLI is on the PATH, for the PR-checkout flow. */
+export async function hasGitHubCli(): Promise<boolean> {
+  try {
+    await execFileAsync("gh", ["--version"]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Creates a worktree checked out to a pull request, via `gh worktree`-style
+ * flow: `gh pr checkout` inside a freshly `git worktree add`ed directory on a
+ * detached HEAD, then let gh switch it to the PR branch. gh handles the
+ * cross-fork and remote-branch cases that raw git cannot.
+ */
+export async function checkoutPullRequest(
+  repoPath: string,
+  worktreePath: string,
+  prNumber: string,
+): Promise<void> {
+  // A detached worktree at HEAD gives gh a clean place to check the PR out
+  // into; gh then creates and switches to the PR's local branch there.
+  await execFileAsync("git", [
+    "-C",
+    repoPath,
+    "worktree",
+    "add",
+    "--detach",
+    "--",
+    worktreePath,
+  ]);
+  try {
+    await execFileAsync("gh", ["pr", "checkout", prNumber], {
+      cwd: worktreePath,
+    });
+  } catch (error) {
+    // Undo the worktree so a failed checkout does not strand an empty detached
+    // directory the user then has to clean up by hand.
+    try {
+      await removeWorktree(repoPath, worktreePath, true);
+    } catch (cleanupError) {
+      log(
+        `Failed to clean up worktree after PR checkout error: ${String(
+          cleanupError,
+        )}`,
+      );
+    }
+    throw error;
+  }
+}
+
+/**
  * Whether git would accept this as a branch name. The rules are fiddly enough
  * (no `..`, no trailing `.lock`, no control characters, and more) that asking
  * git is both shorter and correct where a hand-rolled pattern drifts.
