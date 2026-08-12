@@ -7,7 +7,6 @@
 </p>
 
 Every git worktree in your Explorer sidebar, colour-coded by branch type, with uncommitted work, ahead/behind, and the current one visible at a glance.
-Create, check out, fetch, and switch, all without touching a terminal.
 
 https://github.com/user-attachments/assets/ffd4ad7e-a03e-4e0d-adfa-8736c7335916
 
