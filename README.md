@@ -15,8 +15,6 @@ https://github.com/user-attachments/assets/ffd4ad7e-a03e-4e0d-adfa-8736c7335916
 
 Worktrees let you keep several branches checked out at once, but the editor leaves you guessing which one has unsaved work and which the current window is on. Better Worktrees puts them all in one place and keeps every action one click away.
 
-![The Worktrees view in the Explorer sidebar: worktrees coloured by branch type (feature, fix, release, chore, and untyped), each showing its uncommitted-change count and ahead/behind badges, with one locked and the current window marked](docs/worktrees-view.png)
-
 > ### 🎨 Colour-coded by branch type
 >
 > Every worktree is tinted by what kind of branch it is: 🔵 **feature**, 🔴 **fix**, 🟣 **release**, 🟢 **chore**, ⚪ **`main`**, 🟠 **untyped**, so you read the list by kind instead of squinting at names. The type is detected anywhere in the branch, so `user/login-crash-fix` still reads as a fix. [Fully themeable.](#colouring-worktrees)
