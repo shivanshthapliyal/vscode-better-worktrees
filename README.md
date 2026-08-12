@@ -1,15 +1,13 @@
 <h1 align="center">Better Worktrees</h1>
 
 <p align="center">
-  Every git worktree in your Explorer sidebar, colour-coded by branch type, with uncommitted work, ahead/behind, and the current one visible at a glance.<br>
-  Create, check out, fetch, and switch, all without touching a terminal.
-</p>
-
-<p align="center">
   <a href="#installation"><img src="https://img.shields.io/badge/Install-VS%20Code%20%26%20Cursor-007ACC?style=flat-square" alt="Install"></a>
   <img src="https://img.shields.io/badge/version-0.4.0-blue?style=flat-square" alt="Version 0.4.0">
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT License">
 </p>
+
+Every git worktree in your Explorer sidebar, colour-coded by branch type, with uncommitted work, ahead/behind, and the current one visible at a glance.
+Create, check out, fetch, and switch, all without touching a terminal.
 
 https://github.com/user-attachments/assets/ffd4ad7e-a03e-4e0d-adfa-8736c7335916
 
