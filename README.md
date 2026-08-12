@@ -8,9 +8,7 @@ Worktrees let you keep several branches checked out at once, but the editor give
 
 The **Worktrees** view sits in the Explorer sidebar, grouped by repository. Each row shows its state inline, is tinted by branch type, and a right-click opens the full set of actions.
 
-<video src="https://github.com/shivanshthapliyal/vscode-better-worktrees/raw/main/docs/worktree-demo.mp4" controls muted loop playsinline poster="docs/worktrees-view.png" width="900"></video>
-
-> If the video does not play, [watch the demo](https://github.com/shivanshthapliyal/vscode-better-worktrees/raw/main/docs/worktree-demo.mp4) or see the annotated view below.
+https://github.com/user-attachments/assets/ffd4ad7e-a03e-4e0d-adfa-8736c7335916
 
 ![The Worktrees view in the Explorer sidebar: worktrees coloured by branch type — feature, fix, release, chore, and untyped — each showing its uncommitted-change count and ahead/behind badges, with one locked and the current window marked](docs/worktrees-view.png)
 
