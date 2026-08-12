@@ -3,6 +3,7 @@
 src/**
 scripts/**
 docs/**
+DEVELOPMENT.md
 node_modules/**
 .gitignore
 tsconfig.json
