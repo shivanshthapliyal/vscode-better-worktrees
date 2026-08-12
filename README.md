@@ -1,8 +1,10 @@
 # Better Worktrees
 
-Git worktrees in the Explorer sidebar — create, inspect, and switch between them without touching a terminal.
+Every git worktree in your Explorer sidebar — colour-coded by branch type, with uncommitted work, ahead/behind, and the current one visible at a glance. Create, check out, fetch, and switch, all without touching a terminal.
 
-Worktrees let you keep several branches checked out at once, but the editor gives you little to manage them with. Two questions in particular are hard to answer at a glance: which worktree has uncommitted work, and which one the current window is actually on. The built-in Source Control view lists them all at once with no way to focus. Better Worktrees puts every worktree in one place, surfaces its state inline, and keeps the common actions one click away.
+Worktrees let you keep several branches checked out at once, but the editor leaves you guessing which one has unsaved work and which the current window is on. Better Worktrees puts them all in one place and keeps every action one click away.
+
+Works in **VS Code** and **Cursor**. &nbsp;**[→ Install](#installation)**
 
 ## At a glance
 
@@ -12,27 +14,32 @@ https://github.com/user-attachments/assets/ffd4ad7e-a03e-4e0d-adfa-8736c7335916
 
 ![The Worktrees view in the Explorer sidebar: worktrees coloured by branch type — feature, fix, release, chore, and untyped — each showing its uncommitted-change count and ahead/behind badges, with one locked and the current window marked](docs/worktrees-view.png)
 
-Every row tells you what you need without opening it:
+Every row is coloured by branch type (feature, fix, release, chore, `main`, or untyped) and carries its state inline:
 
-- **Colour by branch type** — feature branches are blue, fixes red, releases purple, chores green, `main`/`master` slate, and anything unrecognised a shade of orange, so you scan the list by kind. (Switch to a distinct hashed colour per branch with `betterWorktrees.colorMode`.)
-- **`● main` — current** — the green dot marks the worktree the active window has open.
-- **`3●`** — three uncommitted changes; **`↑2` / `↓2`** — commits ahead of / behind upstream.
-- **`🔒 locked`** — a locked worktree, protected from removal.
-- **`⚠ stale`** — git reports the directory as gone; prune it to clean up.
-- The muted text on the right is the location — relative to the repo when it lives inside it, home-shortened otherwise.
+| Badge | Meaning |
+|---|---|
+| `● main` | the worktree the current window has open |
+| `3●` | uncommitted changes |
+| `↑2` / `↓2` | commits ahead of / behind upstream |
+| `🔒 locked` | locked, protected from removal |
+| `⚠ stale` | directory is gone — prune to clean up |
 
-Click any row to focus the Source Control view on that worktree; right-click for the full action menu — check out a branch or pull request, fetch and pull, open, copy, lock, or remove.
+Click a row to focus Source Control on that worktree; right-click for the full action menu.
 
 ## Features
 
-- **Create without leaving the editor.** *New Worktree...* walks through a branch name, a start point, and a destination. The destination is suggested from a template you control and shown for editing before anything is written, so worktrees land where you keep them. Branch names are validated by git itself, and slashes are flattened in the directory name so `feat/api` stays a single folder.
-- **Check out what already exists.** *Checkout Branch as Worktree...* lists your local and remote-tracking branches — skipping any already checked out in a worktree — and creates a worktree on the one you pick. *Worktree from Pull Request...* uses the GitHub CLI's `gh pr checkout` to pull down a PR, including cross-fork ones, into its own worktree.
-- **Keep a worktree current.** Right-click for *Fetch* (all remotes, pruning gone branches) and *Pull* (fast-forward only, so it never opens a merge), each scoped to that worktree and reflected in its status the moment it finishes.
-- **Find and prioritise.** A search icon in the view title filters the tree by a branch or path fragment; a title toggle sorts worktrees with uncommitted changes to the top so the ones with work in progress are always in view.
-- **See every worktree's state at a glance.** Each row shows its uncommitted change count, how far it is ahead of or behind upstream, and a marker for the worktree the current window has open. Stale worktrees — ones git reports as prunable because their directory is gone — are flagged rather than shown as ordinary checkouts.
-- **Focus Source Control on one worktree.** Click a worktree to narrow the Source Control view to just that repository, so the Changes list shows only the branch you care about. *Show All Worktrees in Source Control* brings the rest back.
-- **Open a worktree the way you need it.** Reveal it in the Explorer tree or your file manager, add it to the workspace as an extra root, open it in a new or current window, or drop a terminal into it. Copy its path or branch name in a click.
-- **Remove safely.** Removal refuses the main worktree, the one open in the current window, and locked ones; a worktree with uncommitted changes needs explicit confirmation before anything is deleted. Lock and unlock with a reason, and prune stale entries when you're ready.
+| | What it does |
+|---|---|
+| **Create** | Walk through a branch name, start point, and destination — suggested from a template, editable before anything is written. |
+| **Check out existing** | Pick a local or remote-tracking branch (skipping ones already in a worktree) and get a worktree on it. |
+| **From a pull request** | `gh pr checkout` into a fresh worktree, cross-fork PRs included. |
+| **Fetch / Pull** | Per-worktree `fetch --all --prune` and fast-forward-only `pull`, reflected in its status. |
+| **Filter & sort** | Filter the view by branch or path; sort worktrees with uncommitted changes first. |
+| **Focus** | Click a worktree to narrow Source Control to just that branch; restore all in one click. |
+| **Open** | New or current window, workspace root, file manager, or a terminal — plus copy path/branch. |
+| **Manage safely** | Lock/unlock with a reason, prune stale entries, and remove — guarded against the main, current, and locked worktrees. |
+
+Branch names are validated by git, slashes are flattened so `feat/api` stays one folder, and every git call runs through `execFile` (never a shell string).
 
 ## Requirements
 
@@ -42,13 +49,18 @@ Click any row to focus the Source Control view on that worktree; right-click for
 
 ## Installation
 
-Download the latest `.vsix` from the [Releases page](https://github.com/shivanshthapliyal/vscode-better-worktrees/releases) and install it from the command line:
+Download the latest `.vsix` from the [Releases page](https://github.com/shivanshthapliyal/vscode-better-worktrees/releases), then install it in either editor.
+
+**From the command line:**
 
 ```bash
-code --install-extension better-worktrees-<version>.vsix
+code   --install-extension better-worktrees-<version>.vsix   # VS Code
+cursor --install-extension better-worktrees-<version>.vsix   # Cursor
 ```
 
-Or from the editor: **Extensions → ⋯ → Install from VSIX…**
+**From the editor UI:** open the Extensions view, click the **⋯** menu → **Install from VSIX…**, and pick the file. Reload the window if prompted.
+
+The same `.vsix` works in both — Cursor is built on VS Code, so nothing editor-specific is required.
 
 ## Usage
 
