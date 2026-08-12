@@ -1,20 +1,23 @@
-# Better Worktrees
+<h1 align="center">Better Worktrees</h1>
 
-Every git worktree in your Explorer sidebar — colour-coded by branch type, with uncommitted work, ahead/behind, and the current one visible at a glance. Create, check out, fetch, and switch, all without touching a terminal.
+<p align="center">
+  Every git worktree in your Explorer sidebar — colour-coded by branch type, with uncommitted work, ahead/behind, and the current one visible at a glance.<br>
+  Create, check out, fetch, and switch, all without touching a terminal.
+</p>
 
-Worktrees let you keep several branches checked out at once, but the editor leaves you guessing which one has unsaved work and which the current window is on. Better Worktrees puts them all in one place and keeps every action one click away.
-
-Works in **VS Code** and **Cursor**. &nbsp;**[→ Install](#installation)**
-
-## At a glance
-
-The **Worktrees** view sits in the Explorer sidebar, grouped by repository. Each row shows its state inline, is tinted by branch type, and a right-click opens the full set of actions.
+<p align="center">
+  <a href="#installation"><img src="https://img.shields.io/badge/Install-VS%20Code%20%26%20Cursor-007ACC?style=flat-square" alt="Install"></a>
+  <img src="https://img.shields.io/badge/version-0.4.0-blue?style=flat-square" alt="Version 0.4.0">
+  <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT License">
+</p>
 
 https://github.com/user-attachments/assets/ffd4ad7e-a03e-4e0d-adfa-8736c7335916
 
+Worktrees let you keep several branches checked out at once, but the editor leaves you guessing which one has unsaved work and which the current window is on. Better Worktrees puts them all in one place and keeps every action one click away.
+
 ![The Worktrees view in the Explorer sidebar: worktrees coloured by branch type — feature, fix, release, chore, and untyped — each showing its uncommitted-change count and ahead/behind badges, with one locked and the current window marked](docs/worktrees-view.png)
 
-Every row is coloured by branch type (feature, fix, release, chore, `main`, or untyped) and carries its state inline:
+Each row is tinted by branch type and carries its state inline:
 
 | Badge | Meaning |
 |---|---|
@@ -24,7 +27,9 @@ Every row is coloured by branch type (feature, fix, release, chore, `main`, or u
 | `🔒 locked` | locked, protected from removal |
 | `⚠ stale` | directory is gone — prune to clean up |
 
-Click a row to focus Source Control on that worktree; right-click for the full action menu.
+Click a row to focus Source Control on it; right-click for the full action menu.
+
+---
 
 ## Features
 
@@ -169,4 +174,4 @@ Modules that import `vscode` are the editor-facing ones: `extension`, `config`, 
 
 ## License
 
-MIT © Shivansh Thapliyal
+[MIT](LICENSE) © Shivansh Thapliyal
