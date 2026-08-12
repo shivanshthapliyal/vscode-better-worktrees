@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT License">
 </p>
 
-Small wrapper extension to solve the problem of worktrees visibility. Shows every git worktree in your Explorer sidebar, colour-coded by branch type, with uncommitted work, ahead/behind, and the current one visible at a glance.
+A small wrapper extension that solves worktree visibility. It shows every git worktree in your Explorer sidebar, colour-coded by branch type, with uncommitted work, ahead/behind, and the current one visible at a glance, and adds find, focus, and lock alongside commands to manage worktrees and see their state.
 
 https://github.com/user-attachments/assets/ffd4ad7e-a03e-4e0d-adfa-8736c7335916
 
