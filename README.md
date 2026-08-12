@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT License">
 </p>
 
-Every git worktree in your Explorer sidebar, colour-coded by branch type, with uncommitted work, ahead/behind, and the current one visible at a glance.
+Small wrapper extension to solve the problem of worktrees visibility. Shows every git worktree in your Explorer sidebar, colour-coded by branch type, with uncommitted work, ahead/behind, and the current one visible at a glance.
 
 https://github.com/user-attachments/assets/ffd4ad7e-a03e-4e0d-adfa-8736c7335916
 
