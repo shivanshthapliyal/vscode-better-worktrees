@@ -14,6 +14,7 @@ import math
 
 from PIL import Image, ImageDraw
 
+GRID = 128  # Geometry below is expressed in these units, independent of SIZE.
 SIZE = 128
 SCALE = 8
 S = SIZE * SCALE
@@ -96,9 +97,14 @@ def _walk(path: list, step: float) -> list:
 
 
 def render(bg: tuple, ink: tuple) -> Image.Image:
-    canvas = Image.new("RGBA", (S, S), (0, 0, 0, 0))
-    plate = Image.new("RGBA", (S, S), bg + (255,))
-    canvas.paste(plate, (0, 0), rounded_mask(S, CORNER_RADIUS * SCALE))
+    # One grid unit in supersampled pixels, so geometry tracks SIZE rather than
+    # assuming the 128-unit grid equals the output resolution.
+    u = SIZE * SCALE / GRID
+    side = round(GRID * u)
+
+    canvas = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+    plate = Image.new("RGBA", (side, side), bg + (255,))
+    canvas.paste(plate, (0, 0), rounded_mask(side, round(CORNER_RADIUS * u)))
 
     d = ImageDraw.Draw(canvas)
     paths = build_paths()
@@ -107,11 +113,11 @@ def render(bg: tuple, ink: tuple) -> Image.Image:
     # line joint modes distort on densely sampled curves.
     for path in paths:
         for x, y in _walk(path, 0.25):
-            _dot(d, (x * SCALE, y * SCALE), STROKE / 2 * SCALE, ink)
+            _dot(d, (x * u, y * u), STROKE / 2 * u, ink)
 
-    _dot(d, (X_START * SCALE, TRUNK_Y * SCALE), ROOT_DOT * SCALE, ink)
+    _dot(d, (X_START * u, TRUNK_Y * u), ROOT_DOT * u, ink)
     for path in paths:
-        _dot(d, (X_END * SCALE, path[-1][1] * SCALE), TIP_DOT * SCALE, ink)
+        _dot(d, (X_END * u, path[-1][1] * u), TIP_DOT * u, ink)
 
     return canvas.resize((SIZE, SIZE), Image.Resampling.LANCZOS)
 

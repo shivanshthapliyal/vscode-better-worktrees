@@ -24,7 +24,6 @@ from pathlib import Path
 from PIL import Image
 
 MARK_NITS = 400.0
-PLATE_NITS = 4.0
 SDR_WHITE_NITS = 203.0
 
 SIZE = 512
@@ -73,7 +72,12 @@ def build_source() -> Image.Image:
 
 
 def encode_pq(img: Image.Image) -> Image.Image:
-    """Rewrite SDR pixels as PQ code values, placing white at MARK_NITS."""
+    """Rewrite SDR pixels as PQ code values, placing white at MARK_NITS.
+
+    Every pixel is scaled by the same factor, so the image keeps its SDR tonal
+    relationships and only the ceiling moves: the plate stays as dark relative
+    to the mark as it was, instead of being lifted toward mid-grey.
+    """
     out = Image.new("RGB", img.size)
     src, dst = img.load(), out.load()
     assert src is not None and dst is not None
@@ -84,17 +88,7 @@ def encode_pq(img: Image.Image) -> Image.Image:
             px = src[x, y]
             if px not in cache:
                 lin = [srgb_to_linear(c / 255.0) for c in px]
-                # Luma places a pixel on the plate-to-mark ramp, so anti-aliased
-                # edge pixels land between the two luminances instead of
-                # snapping to one of them.
-                luma = 0.2627 * lin[0] + 0.6780 * lin[1] + 0.0593 * lin[2]
-                target = PLATE_NITS + (MARK_NITS - PLATE_NITS) * luma
-                # Rescale to hit `target` exactly. Dividing by luma preserves
-                # hue and saturation; without it the ramp is applied twice and
-                # the plate collapses to 0 nits. True black (the corners outside
-                # the rounded plate) has no hue to preserve and stays black.
-                gain = target / luma if luma > 1e-6 else 0.0
-                wide = to_rec2020([c * gain for c in lin])
+                wide = to_rec2020([c * MARK_NITS for c in lin])
                 cache[px] = tuple(
                     min(255, max(0, round(pq_encode(c) * 255.0))) for c in wide
                 )
@@ -130,7 +124,6 @@ def main() -> None:
     print(
         f"  mark  -> {MARK_NITS:.0f} nits ({MARK_NITS / SDR_WHITE_NITS:.1f}x SDR white)"
     )
-    print(f"  plate -> {PLATE_NITS:.0f} nits")
 
 
 if __name__ == "__main__":
