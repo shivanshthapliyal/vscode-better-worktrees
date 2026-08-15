@@ -1,102 +1,129 @@
-"""Generates the extension icon: a git-worktree 'branch fork' glyph.
+"""Generates the extension icon: one repository branching into parallel worktrees.
 
-A trunk node on the left splits into three branch nodes on the right, echoing
-one repository fanning out into several worktrees. Rendered at 4x and
-downsampled for clean anti-aliased edges. Run: python3 scripts/make-icon.py
+A trunk runs left to right. Two branches peel away through tangent quarter-arcs
+and then straighten out parallel to the trunk, so the right edge of the mark is
+three parallel lines -- three working trees checked out at once.
+
+Geometry is defined on a 128-unit grid and rendered at 8x, then downsampled, so
+every curve is a true circular arc rather than a smoothed elbow.
+
+Run: python3 scripts/make-icon.py
 """
+
+import math
 
 from PIL import Image, ImageDraw
 
 SIZE = 128
-SCALE = 4
+SCALE = 8
 S = SIZE * SCALE
 
-BG_TOP = (37, 99, 235)  # blue
-BG_BOTTOM = (14, 165, 164)  # teal
-NODE = (255, 255, 255)
-EDGE = (255, 255, 255)
+INK = (255, 255, 255)
+BG = (11, 12, 14)
+CORNER_RADIUS = 28
+
+STROKE = 8.5
+ARC_R = 17.0
+ROOT_DOT = 9.5
+TIP_DOT = 7.5
+
+TRUNK_Y = 64.0
+X_START = 27.0
+X_END = 101.0
+TAKEOFF_X = 42.0
+
+ARC_STEPS = 64
+
+
+def s_curve(start_x: float, from_y: float, direction: float) -> list:
+    """Two tangent quarter-arcs stepping a horizontal line 2*ARC_R sideways.
+
+    Arc one bends away from the trunk, arc two bends back; they share a vertical
+    tangent at the joint, and the pair leaves and arrives horizontal, so the
+    curve meets the straight segments on either side without a kink.
+    """
+    pts = []
+
+    cx, cy = start_x, from_y + ARC_R * direction
+    for i in range(ARC_STEPS + 1):
+        a = (math.pi / 2) * (i / ARC_STEPS)
+        pts.append((cx + ARC_R * math.sin(a), cy - ARC_R * math.cos(a) * direction))
+
+    jx, jy = pts[-1]
+    cx2, cy2 = jx + ARC_R, jy
+    for i in range(1, ARC_STEPS + 1):
+        a = math.pi - (math.pi / 2) * (i / ARC_STEPS)
+        pts.append((cx2 + ARC_R * math.cos(a), cy2 + ARC_R * math.sin(a) * direction))
+
+    return pts
+
+
+def build_paths() -> list:
+    paths = [[(X_START, TRUNK_Y), (X_END, TRUNK_Y)]]
+
+    for direction in (-1.0, 1.0):
+        curve = s_curve(TAKEOFF_X, TRUNK_Y, direction)
+        end_y = curve[-1][1]
+        paths.append([(TAKEOFF_X, TRUNK_Y)] + curve + [(X_END, end_y)])
+
+    return paths
 
 
 def rounded_mask(size: int, radius: int) -> Image.Image:
     mask = Image.new("L", (size, size), 0)
-    d = ImageDraw.Draw(mask)
-    d.rounded_rectangle([0, 0, size - 1, size - 1], radius=radius, fill=255)
+    ImageDraw.Draw(mask).rounded_rectangle(
+        [0, 0, size - 1, size - 1], radius=radius, fill=255
+    )
     return mask
 
 
-def vertical_gradient(size: int, top: tuple, bottom: tuple) -> Image.Image:
-    grad = Image.new("RGB", (1, size))
-    for y in range(size):
-        t = y / (size - 1)
-        grad.putpixel(
-            (0, y),
-            tuple(round(top[i] + (bottom[i] - top[i]) * t) for i in range(3)),
-        )
-    return grad.resize((size, size))
+def _walk(path: list, step: float) -> list:
+    """Resample a polyline to points evenly spaced along its arc length."""
+    out = [path[0]]
+    carry = 0.0
+    for (x0, y0), (x1, y1) in zip(path, path[1:]):
+        seg = math.hypot(x1 - x0, y1 - y0)
+        if seg == 0:
+            continue
+        t = step - carry
+        while t <= seg:
+            f = t / seg
+            out.append((x0 + (x1 - x0) * f, y0 + (y1 - y0) * f))
+            t += step
+        carry = (carry + seg) % step
+    out.append(path[-1])
+    return out
+
+
+def render(bg: tuple, ink: tuple) -> Image.Image:
+    canvas = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    plate = Image.new("RGBA", (S, S), bg + (255,))
+    canvas.paste(plate, (0, 0), rounded_mask(S, CORNER_RADIUS * SCALE))
+
+    d = ImageDraw.Draw(canvas)
+    paths = build_paths()
+
+    # Stamping a disc along the path yields true round caps and joins; PIL's
+    # line joint modes distort on densely sampled curves.
+    for path in paths:
+        for x, y in _walk(path, 0.25):
+            _dot(d, (x * SCALE, y * SCALE), STROKE / 2 * SCALE, ink)
+
+    _dot(d, (X_START * SCALE, TRUNK_Y * SCALE), ROOT_DOT * SCALE, ink)
+    for path in paths:
+        _dot(d, (X_END * SCALE, path[-1][1] * SCALE), TIP_DOT * SCALE, ink)
+
+    return canvas.resize((SIZE, SIZE), Image.Resampling.LANCZOS)
+
+
+def _dot(d: ImageDraw.ImageDraw, center: tuple, r: float, fill: tuple) -> None:
+    x, y = center
+    d.ellipse([x - r, y - r, x + r, y + r], fill=fill)
 
 
 def main() -> None:
-    bg = vertical_gradient(S, BG_TOP, BG_BOTTOM).convert("RGBA")
-    canvas = Image.new("RGBA", (S, S), (0, 0, 0, 0))
-    canvas.paste(bg, (0, 0), rounded_mask(S, radius=28 * SCALE))
-
-    d = ImageDraw.Draw(canvas)
-
-    trunk = (40 * SCALE, 64 * SCALE)
-    branches = [
-        (92 * SCALE, 32 * SCALE),
-        (92 * SCALE, 64 * SCALE),
-        (92 * SCALE, 96 * SCALE),
-    ]
-    r_trunk = 11 * SCALE
-    r_branch = 8 * SCALE
-    edge_w = 7 * SCALE
-
-    # Edges: curved connectors trunk -> each branch, drawn as smooth polylines.
-    for bx, by in branches:
-        mid_x = (trunk[0] + bx) // 2
-        pts = [
-            trunk,
-            (mid_x, trunk[1]),
-            (mid_x, by),
-            (bx, by),
-        ]
-        # A simple quadratic-ish smoothing: sample the elbow with small steps.
-        smooth = []
-        steps = 24
-        for i in range(steps + 1):
-            t = i / steps
-            # de Casteljau over the 4 control points
-            ax = _lerp(pts, t)
-            smooth.append(ax)
-        d.line(smooth, fill=EDGE, width=edge_w, joint="curve")
-
-    # Nodes on top of the edges.
-    _dot(d, trunk, r_trunk, NODE)
-    for b in branches:
-        _dot(d, b, r_branch, NODE)
-
-    out = canvas.resize((SIZE, SIZE), Image.LANCZOS)
-    out.save("icon.png")
+    render(BG, INK).save("icon.png")
     print("wrote icon.png")
-
-
-def _lerp(pts, t):
-    p = list(pts)
-    while len(p) > 1:
-        p = [
-            (
-                p[i][0] + (p[i + 1][0] - p[i][0]) * t,
-                p[i][1] + (p[i + 1][1] - p[i][1]) * t,
-            )
-            for i in range(len(p) - 1)
-        ]
-    return p[0]
-
-
-def _dot(d, center, r, fill):
-    x, y = center
-    d.ellipse([x - r, y - r, x + r, y + r], fill=fill)
 
 
 if __name__ == "__main__":

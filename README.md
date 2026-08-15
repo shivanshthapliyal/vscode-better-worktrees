@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source srcset="https://raw.githubusercontent.com/shivanshthapliyal/vscode-better-worktrees/HEAD/docs/icon-hdr.png" media="(dynamic-range: high)" type="image/png">
+    <img src="icon.png" alt="Better Worktrees" width="112" height="112">
+  </picture>
+</p>
+
 <h1 align="center">Better Worktrees</h1>
 
 <p align="center">
