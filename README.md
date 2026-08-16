@@ -1,15 +1,12 @@
 <p align="center">
-  <picture>
-    <source srcset="https://raw.githubusercontent.com/shivanshthapliyal/vscode-better-worktrees/HEAD/docs/icon-hdr.png" media="(dynamic-range: high)" type="image/png">
-    <img src="icon.png" alt="Better Worktrees" width="112" height="112">
-  </picture>
+  <img src="https://raw.githubusercontent.com/shivanshthapliyal/vscode-better-worktrees/HEAD/icon.png" alt="Better Worktrees" width="112" height="112">
 </p>
 
 <h1 align="center">Better Worktrees</h1>
 
 <p align="center">
   <a href="#installation"><img src="https://img.shields.io/badge/Install-VS%20Code%20%26%20Cursor-007ACC?style=flat-square" alt="Install"></a>
-  <img src="https://img.shields.io/badge/version-0.4.0-blue?style=flat-square" alt="Version 0.4.0">
+  <a href="https://open-vsx.org/extension/shivanshthapliyal/better-worktrees"><img src="https://img.shields.io/open-vsx/v/shivanshthapliyal/better-worktrees?style=flat-square&label=Open%20VSX" alt="Open VSX version"></a>
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT License">
 </p>
 
@@ -62,13 +59,18 @@ Branch names are validated by git, slashes are flattened so `feat/api` stays one
 
 ## Installation
 
-**Cursor** — search for *Better Worktrees* in the Extensions view, or:
+Search for *Better Worktrees* in the Extensions view, or:
 
 ```bash
 cursor --install-extension shivanshthapliyal.better-worktrees
 ```
 
-**From a `.vsix`** — download the latest from the [Releases page](https://github.com/shivanshthapliyal/vscode-better-worktrees/releases), then:
+This installs from the [Open VSX Registry](https://open-vsx.org/extension/shivanshthapliyal/better-worktrees) and updates itself as new versions ship.
+
+<details>
+<summary>Installing from a <code>.vsix</code> instead</summary>
+
+Download the latest from the [Releases page](https://github.com/shivanshthapliyal/vscode-better-worktrees/releases), then:
 
 ```bash
 code   --install-extension better-worktrees-<version>.vsix   # VS Code
@@ -77,7 +79,11 @@ cursor --install-extension better-worktrees-<version>.vsix   # Cursor
 
 Or open the Extensions view, click the **⋯** menu → **Install from VSIX…**, and pick the file. Reload the window if prompted.
 
-The same package works in both: Cursor is built on VS Code, so nothing editor-specific is required.
+A `.vsix` install does not auto-update, so you have to repeat this for every release. Prefer the registry unless you specifically need a pinned version.
+
+</details>
+
+The same package works in both editors: Cursor is built on VS Code, so nothing editor-specific is required.
 
 ## Usage
 
