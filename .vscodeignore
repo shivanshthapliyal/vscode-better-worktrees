@@ -1,6 +1,10 @@
 .vscode/**
 .vscode-test/**
 .ruff_cache/**
+.worktrees/**
+.github/**
+**/.DS_Store
+*.vsix
 src/**
 scripts/**
 docs/**
