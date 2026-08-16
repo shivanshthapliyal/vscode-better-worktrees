@@ -55,18 +55,22 @@ Branch names are validated by git, slashes are flattened so `feat/api` stays one
 
 ## Installation
 
-Download the latest `.vsix` from the [Releases page](https://github.com/shivanshthapliyal/vscode-better-worktrees/releases), then install it in either editor.
+**Cursor** — search for *Better Worktrees* in the Extensions view, or:
 
-**From the command line:**
+```bash
+cursor --install-extension shivanshthapliyal.better-worktrees
+```
+
+**From a `.vsix`** — download the latest from the [Releases page](https://github.com/shivanshthapliyal/vscode-better-worktrees/releases), then:
 
 ```bash
 code   --install-extension better-worktrees-<version>.vsix   # VS Code
 cursor --install-extension better-worktrees-<version>.vsix   # Cursor
 ```
 
-**From the editor UI:** open the Extensions view, click the **⋯** menu → **Install from VSIX…**, and pick the file. Reload the window if prompted.
+Or open the Extensions view, click the **⋯** menu → **Install from VSIX…**, and pick the file. Reload the window if prompted.
 
-The same `.vsix` works in both: Cursor is built on VS Code, so nothing editor-specific is required.
+The same package works in both: Cursor is built on VS Code, so nothing editor-specific is required.
 
 ## Usage
 

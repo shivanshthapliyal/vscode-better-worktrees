@@ -2,7 +2,7 @@
   "name": "better-worktrees",
   "displayName": "Better Worktrees",
   "description": "Manage git worktrees from the Explorer: live status, Source Control scoping, and safe removal.",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "publisher": "shivanshthapliyal",
   "icon": "icon.png",
   "license": "MIT",

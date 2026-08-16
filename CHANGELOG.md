@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.1
+
+- First release on the Open VSX Registry, so the extension installs from the Extensions view in Cursor instead of from a downloaded `.vsix`
+- Packaging no longer includes nested worktree checkouts, cutting the published package from 28 MB to 79 KB
+
 ## 0.4.0
 
 - Check out an existing branch into a worktree: *Checkout Branch as Worktree...* lists local and remote-tracking branches, skips ones already checked out elsewhere, and creates a worktree on the one you pick
