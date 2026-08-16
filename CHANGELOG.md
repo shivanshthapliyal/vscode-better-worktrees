@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.2
+
+- Fix repositories being missed when the scanned folder itself holds a leftover `.git` file: a `.git` file whose `gitdir` no longer exists is no longer treated as a repository, so the scan keeps descending instead of reporting the folder as one unusable repo
+- New extension icon
+
 ## 0.4.1
 
 - First release on the Open VSX Registry, so the extension installs from the Extensions view in Cursor instead of from a downloaded `.vsix`
