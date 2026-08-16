@@ -11,6 +11,8 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
     steps:
       - uses: actions/checkout@v4
 
@@ -44,9 +46,7 @@ jobs:
         run: npx ovsx publish better-worktrees-*.vsix -p "$OVSX_PAT"
 
       - name: Publish to VS Code Marketplace
-        if: ${{ secrets.VSCE_PAT != '' }}
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        if: env.VSCE_PAT != ''
         run: npx @vscode/vsce publish --packagePath better-worktrees-*.vsix -p "$VSCE_PAT"
 
       - name: Attach vsix to GitHub release
