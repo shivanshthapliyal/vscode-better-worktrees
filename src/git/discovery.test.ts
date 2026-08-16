@@ -45,9 +45,12 @@ describe("findGitRepos", () => {
   });
 
   it("treats a .git file (linked worktree) as a repo", async () => {
+    const repo = await makeRepo("repo-a");
+    const gitdir = path.join(repo, ".git", "worktrees", "feature");
+    await mkdir(gitdir, { recursive: true });
     const wt = path.join(root, "worktrees", "feature");
     await mkdir(wt, { recursive: true });
-    await writeFile(path.join(wt, ".git"), "gitdir: /somewhere/.git/worktrees/x");
+    await writeFile(path.join(wt, ".git"), `gitdir: ${gitdir}`);
     expect(await findGitRepos(root, 3)).toContain(wt);
   });
 
@@ -73,5 +76,64 @@ describe("findGitRepos", () => {
   it("scans only the root at depth 0", async () => {
     await makeRepo("child");
     expect(await findGitRepos(root, 0)).toEqual([]);
+  });
+
+  it("keeps scanning past a .git file whose gitdir no longer exists", async () => {
+    await writeFile(
+      path.join(root, ".git"),
+      "gitdir: /nonexistent/.git/worktrees/gone",
+    );
+    const repo = await makeRepo("repo-a");
+    const found = await findGitRepos(root, 3);
+    expect(found).toContain(repo);
+    expect(found).not.toContain(root);
+  });
+
+  it("finds sibling worktrees when the scan root has a stale .git file", async () => {
+    await writeFile(
+      path.join(root, ".git"),
+      "gitdir: /nonexistent/.git/worktrees/gone",
+    );
+    const repo = await makeRepo("repo-a");
+    const linked = path.join(root, ".worktrees", "feature");
+    await mkdir(linked, { recursive: true });
+    await writeFile(
+      path.join(linked, ".git"),
+      `gitdir: ${path.join(repo, ".git", "worktrees", "feature")}`,
+    );
+    await mkdir(path.join(repo, ".git", "worktrees", "feature"), {
+      recursive: true,
+    });
+    const found = await findGitRepos(root, 3);
+    expect(found).toContain(repo);
+    expect(found).toContain(linked);
+  });
+
+  it("still treats a .git file with an existing gitdir as a repo", async () => {
+    const repo = await makeRepo("repo-a");
+    await mkdir(path.join(repo, ".git", "worktrees", "feature"), {
+      recursive: true,
+    });
+    const linked = path.join(root, "linked");
+    await mkdir(linked, { recursive: true });
+    await writeFile(
+      path.join(linked, ".git"),
+      `gitdir: ${path.join(repo, ".git", "worktrees", "feature")}`,
+    );
+    expect(await findGitRepos(root, 3)).toContain(linked);
+  });
+
+  it("resolves a relative gitdir against the worktree directory", async () => {
+    const repo = await makeRepo("repo-a");
+    await mkdir(path.join(repo, ".git", "worktrees", "feature"), {
+      recursive: true,
+    });
+    const linked = path.join(root, "linked");
+    await mkdir(linked, { recursive: true });
+    await writeFile(
+      path.join(linked, ".git"),
+      "gitdir: ../repo-a/.git/worktrees/feature",
+    );
+    expect(await findGitRepos(root, 3)).toContain(linked);
   });
 });
