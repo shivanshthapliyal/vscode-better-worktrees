@@ -1,6 +1,8 @@
 import { execFile } from "node:child_process";
+import { stat } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
+import { WorktreeTimestamps } from "../display";
 import { log } from "../logger";
 import { Worktree, WorktreeStatus } from "../types";
 import { parseWorktreeList } from "./porcelain";
@@ -439,6 +441,98 @@ export async function setWorktreeLock(
   }
   args.push("--", worktreePath);
   await execFileAsync("git", args);
+}
+
+/**
+ * The times the view can sort worktrees by, for every worktree of one
+ * repository at once.
+ *
+ * Last-commit time comes from a single `rev-list` over every head rather than
+ * one call per worktree: the sort re-runs on each refresh, and git collapses a
+ * repeated revision argument, so worktrees sharing a commit are covered by one
+ * argument between them.
+ *
+ * Creation time has no git equivalent — nothing records when a worktree was
+ * added — so it falls back to the mtime of the `.git` file inside a linked
+ * worktree. git writes that file when the worktree is created and rewrites it
+ * only on `worktree move`, so it tracks "when did this worktree appear here"
+ * and is not disturbed by commits, locking, or gc.
+ */
+export async function getWorktreeTimestamps(
+  repoPath: string,
+  worktrees: readonly Worktree[],
+): Promise<Map<string, WorktreeTimestamps>> {
+  const [commitTimes, createdTimes] = await Promise.all([
+    readLastCommitTimes(repoPath, worktrees),
+    Promise.all(worktrees.map((worktree) => readCreatedTime(worktree))),
+  ]);
+
+  const timestamps = new Map<string, WorktreeTimestamps>();
+  worktrees.forEach((worktree, index) => {
+    timestamps.set(path.resolve(worktree.path), {
+      lastCommit: worktree.head ? commitTimes.get(worktree.head) : undefined,
+      created: createdTimes[index],
+    });
+  });
+  return timestamps;
+}
+
+/** Committer date per commit id, in seconds, for the heads given. */
+async function readLastCommitTimes(
+  repoPath: string,
+  worktrees: readonly Worktree[],
+): Promise<Map<string, number>> {
+  const heads = [
+    ...new Set(worktrees.map((worktree) => worktree.head).filter(Boolean)),
+  ] as string[];
+  if (heads.length === 0) {
+    return new Map();
+  }
+
+  try {
+    const { stdout } = await execFileAsync("git", [
+      "-C",
+      repoPath,
+      "rev-list",
+      "--no-walk",
+      // A stale worktree can name a commit that no longer exists; without this
+      // git fails the whole batch over the one missing object.
+      "--ignore-missing",
+      "--format=%H %ct",
+      ...heads,
+    ]);
+
+    const times = new Map<string, number>();
+    for (const line of stdout.split("\n")) {
+      // `rev-list --format` prints a `commit <id>` header before each formatted
+      // line, so only the formatted lines are of interest.
+      const match = /^([0-9a-f]{40}) (\d+)$/.exec(line.trim());
+      if (match) {
+        times.set(match[1], Number(match[2]));
+      }
+    }
+    return times;
+  } catch (error) {
+    log(`Failed to read commit times in ${repoPath}: ${String(error)}`);
+    return new Map();
+  }
+}
+
+async function readCreatedTime(
+  worktree: Worktree,
+): Promise<number | undefined> {
+  try {
+    const gitEntry = await stat(path.join(worktree.path, ".git"));
+    // Only a linked worktree has a `.git` *file*, written once at creation. The
+    // main worktree has a `.git` directory whose mtime moves with every commit,
+    // fetch and gc, so reading it would report last activity as a creation time
+    // and float the main worktree to the top of a newest-first order.
+    return gitEntry.isFile() ? gitEntry.mtimeMs : undefined;
+  } catch {
+    // The directory is gone (a stale entry) or unreadable. Reported as unknown,
+    // which sorts it below the worktrees that do have a time.
+    return undefined;
+  }
 }
 
 /**

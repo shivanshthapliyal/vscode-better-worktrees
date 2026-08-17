@@ -231,13 +231,44 @@ export function formatWorktreeLocation(
   return shortenHomePath(worktreePath, homeDir);
 }
 
+/**
+ * The orders the view can be put in. Every mode keeps the current window's
+ * worktree first and bare worktrees last — those two are about finding your
+ * place in the list rather than about ordering, so a mode that reshuffled them
+ * would cost more than it gained. The mode decides only what happens between.
+ */
+export type WorktreeSortMode =
+  | "branch"
+  | "dirtyFirst"
+  | "lastCommit"
+  | "created";
+
+export const WORKTREE_SORT_MODES: readonly WorktreeSortMode[] = [
+  "branch",
+  "dirtyFirst",
+  "lastCommit",
+  "created",
+];
+
+/** Times a sort can order by, absent when they could not be read. */
+export interface WorktreeTimestamps {
+  /** Committer date of the worktree's HEAD, in seconds. */
+  lastCommit?: number;
+  /** When the worktree was created, in milliseconds. */
+  created?: number;
+}
+
 export interface SortWorktreesOptions {
   currentPath?: string;
+  mode?: WorktreeSortMode;
   /**
    * When set, worktrees whose resolved path is in this set sort ahead of the
    * rest (after the current worktree), surfacing the ones with uncommitted work.
+   * Only consulted in `dirtyFirst` mode.
    */
   dirtyPaths?: ReadonlySet<string>;
+  /** Keyed by worktree path; only consulted by the timestamp modes. */
+  timestamps?: ReadonlyMap<string, WorktreeTimestamps>;
 }
 
 export function sortWorktreesForDisplay(
@@ -245,11 +276,14 @@ export function sortWorktreesForDisplay(
   options: SortWorktreesOptions | string = {},
 ): Worktree[] {
   // A bare string keeps the original `(worktrees, currentPath)` call shape
-  // working; the object form adds the dirty-first option without a second
-  // positional argument nobody would remember the order of.
-  const { currentPath, dirtyPaths } =
+  // working; the object form adds the sort options without a string of
+  // positional arguments nobody would remember the order of.
+  const { currentPath, mode, dirtyPaths, timestamps } =
     typeof options === "string" ? { currentPath: options } : options;
   const normalizedCurrent = currentPath ? path.resolve(currentPath) : undefined;
+  // `dirtyPaths` on its own means dirty-first: the option predates the mode and
+  // callers passing it never named a mode.
+  const effectiveMode = mode ?? (dirtyPaths ? "dirtyFirst" : "branch");
 
   return [...worktrees].sort((a, b) => {
     const aCurrent = isCurrentWorktree(a, normalizedCurrent);
@@ -262,16 +296,55 @@ export function sortWorktreesForDisplay(
       return a.isBare ? 1 : -1;
     }
 
-    if (dirtyPaths) {
-      const aDirty = dirtyPaths.has(path.resolve(a.path));
-      const bDirty = dirtyPaths.has(path.resolve(b.path));
-      if (aDirty !== bDirty) {
-        return aDirty ? -1 : 1;
-      }
+    const byMode = compareByMode(a, b, effectiveMode, dirtyPaths, timestamps);
+    if (byMode !== 0) {
+      return byMode;
     }
 
     return worktreeSortKey(a).localeCompare(worktreeSortKey(b));
   });
+}
+
+/**
+ * The mode-specific part of the order, or 0 to leave the pair to the
+ * alphabetical tiebreak. A worktree with no timestamp sorts after every
+ * worktree that has one: it is unknown rather than old, and treating a missing
+ * time as zero would bury stale and freshly cloned worktrees together at the
+ * bottom in an order that changes with the mode.
+ */
+function compareByMode(
+  a: Worktree,
+  b: Worktree,
+  mode: WorktreeSortMode,
+  dirtyPaths: ReadonlySet<string> | undefined,
+  timestamps: ReadonlyMap<string, WorktreeTimestamps> | undefined,
+): number {
+  if (mode === "dirtyFirst") {
+    if (!dirtyPaths) {
+      return 0;
+    }
+    const aDirty = dirtyPaths.has(path.resolve(a.path));
+    const bDirty = dirtyPaths.has(path.resolve(b.path));
+    return aDirty === bDirty ? 0 : aDirty ? -1 : 1;
+  }
+
+  if (mode === "lastCommit" || mode === "created") {
+    const field = mode === "lastCommit" ? "lastCommit" : "created";
+    const aTime = timestamps?.get(path.resolve(a.path))?.[field];
+    const bTime = timestamps?.get(path.resolve(b.path))?.[field];
+    if (aTime === bTime) {
+      return 0;
+    }
+    if (aTime === undefined) {
+      return 1;
+    }
+    if (bTime === undefined) {
+      return -1;
+    }
+    return bTime - aTime;
+  }
+
+  return 0;
 }
 
 /** Whether a branch or path substring matches, for the view's filter box. */

@@ -20,8 +20,27 @@ vi.mock("node:child_process", () => ({
 vi.mock("vscode", () => ({}), { virtual: true });
 vi.mock("../logger", () => ({ log: vi.fn() }));
 
+/** Paths to a `.git` entry's mtime, and whether it is a file or a directory. */
+const statMock = {
+  entries: new Map<string, { mtimeMs: number; isFile: boolean }>(),
+};
+
+vi.mock("node:fs/promises", () => ({
+  stat: (target: string) => {
+    const entry = statMock.entries.get(target);
+    if (!entry) {
+      return Promise.reject(new Error("ENOENT"));
+    }
+    return Promise.resolve({
+      mtimeMs: entry.mtimeMs,
+      isFile: () => entry.isFile,
+    });
+  },
+}));
+
 import {
   createWorktree,
+  getWorktreeTimestamps,
   hasUpstream,
   isValidBranchName,
   listStartPoints,
@@ -318,5 +337,137 @@ describe("listStartPoints", () => {
   it("returns nothing rather than throwing when git fails", async () => {
     mock.fail = true;
     expect(await listStartPoints("/repo")).toEqual([]);
+  });
+});
+
+describe("getWorktreeTimestamps", () => {
+  function worktree(overrides: Record<string, unknown> = {}) {
+    return {
+      path: "/repo/wt",
+      head: "a".repeat(40),
+      branch: "feat/x",
+      isBare: false,
+      isDetached: false,
+      isLocked: false,
+      isPrunable: false,
+      ...overrides,
+    };
+  }
+
+  beforeEach(() => {
+    calls.length = 0;
+    mock.stdout = "";
+    mock.fail = false;
+    statMock.entries.clear();
+  });
+
+  /**
+   * One `rev-list` for every worktree rather than one per worktree: the sort
+   * runs on each refresh, and a per-worktree process would put a git spawn
+   * behind every keystroke in the filter box.
+   */
+  it("asks for every head in a single call", async () => {
+    const first = "1".repeat(40);
+    const second = "2".repeat(40);
+    mock.stdout = `commit ${first}\n${first} 500\ncommit ${second}\n${second} 400\n`;
+
+    const times = await getWorktreeTimestamps("/repo", [
+      worktree({ path: "/repo/a", head: first }),
+      worktree({ path: "/repo/b", head: second }),
+    ]);
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toEqual([
+      "-C",
+      "/repo",
+      "rev-list",
+      "--no-walk",
+      "--ignore-missing",
+      "--format=%H %ct",
+      first,
+      second,
+    ]);
+    expect(times.get("/repo/a")?.lastCommit).toBe(500);
+    expect(times.get("/repo/b")?.lastCommit).toBe(400);
+  });
+
+  it("gives worktrees on the same commit the same time from one argument", async () => {
+    const head = "3".repeat(40);
+    mock.stdout = `commit ${head}\n${head} 700\n`;
+
+    const times = await getWorktreeTimestamps("/repo", [
+      worktree({ path: "/repo/a", head }),
+      worktree({ path: "/repo/b", head }),
+    ]);
+
+    // git collapses a repeated argument, so a per-worktree lookup would have
+    // left the second one blank.
+    expect(times.get("/repo/a")?.lastCommit).toBe(700);
+    expect(times.get("/repo/b")?.lastCommit).toBe(700);
+  });
+
+  it("skips git altogether when no worktree has a head", async () => {
+    const times = await getWorktreeTimestamps("/repo", [
+      worktree({ path: "/repo/a", head: undefined }),
+    ]);
+
+    // A `rev-list` with no revision argument is a usage error, not an empty result.
+    expect(calls).toHaveLength(0);
+    expect(times.get("/repo/a")?.lastCommit).toBeUndefined();
+  });
+
+  it("leaves the commit time out rather than guessing when git fails", async () => {
+    mock.fail = true;
+    const times = await getWorktreeTimestamps("/repo", [worktree()]);
+    expect(times.get("/repo/wt")?.lastCommit).toBeUndefined();
+  });
+
+  /**
+   * A linked worktree's `.git` file is written once, when the worktree is
+   * created, and git rewrites it only on `worktree move` — which is a
+   * re-creation as far as "when did this appear here" goes.
+   */
+  it("reads creation time from the linked worktree's .git file", async () => {
+    statMock.entries.set("/repo/wt/.git", { mtimeMs: 1234, isFile: true });
+    const times = await getWorktreeTimestamps("/repo", [worktree()]);
+    expect(times.get("/repo/wt")?.created).toBe(1234);
+  });
+
+  /**
+   * The main worktree's `.git` is a directory, and its mtime moves with every
+   * commit, fetch and gc. Reading it would report last activity as a creation
+   * time, floating the main worktree to the top of a newest-first order.
+   */
+  it("has no creation time for the main worktree, whose .git is a directory", async () => {
+    statMock.entries.set("/repo/.git", { mtimeMs: 9999, isFile: false });
+    const times = await getWorktreeTimestamps("/repo", [
+      worktree({ path: "/repo" }),
+    ]);
+    expect(times.get("/repo")?.created).toBeUndefined();
+  });
+
+  it("leaves creation time out when the worktree directory is gone", async () => {
+    const times = await getWorktreeTimestamps("/repo", [
+      worktree({ isPrunable: true }),
+    ]);
+    expect(times.get("/repo/wt")?.created).toBeUndefined();
+  });
+
+  it("keys results by resolved path so a trailing slash still matches", async () => {
+    statMock.entries.set("/repo/wt/.git", { mtimeMs: 99, isFile: true });
+    const times = await getWorktreeTimestamps("/repo", [
+      worktree({ path: "/repo/wt/" }),
+    ]);
+    expect(times.get("/repo/wt")?.created).toBe(99);
+  });
+
+  it("ignores a commit line for a head no worktree is on", async () => {
+    const head = "4".repeat(40);
+    const stranger = "5".repeat(40);
+    mock.stdout = `commit ${stranger}\n${stranger} 800\ncommit ${head}\n${head} 600\n`;
+
+    const times = await getWorktreeTimestamps("/repo", [worktree({ head })]);
+
+    expect(times.get("/repo/wt")?.lastCommit).toBe(600);
   });
 });

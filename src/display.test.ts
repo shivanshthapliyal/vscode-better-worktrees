@@ -171,6 +171,152 @@ describe("sortWorktreesForDisplay", () => {
 
     expect(sorted.map((w) => w.path)).toEqual(["/r/apple", "/r/banana"]);
   });
+
+  it("treats the dirtyFirst mode as equivalent to passing dirty paths", () => {
+    const worktrees: Worktree[] = [
+      makeWorktree({ path: "/r/apple", branch: "apple" }),
+      makeWorktree({ path: "/r/banana", branch: "banana" }),
+    ];
+
+    const sorted = sortWorktreesForDisplay(worktrees, {
+      mode: "dirtyFirst",
+      dirtyPaths: new Set(["/r/banana"]),
+    });
+
+    expect(sorted.map((w) => w.path)).toEqual(["/r/banana", "/r/apple"]);
+  });
+
+  it("ignores dirty paths in modes that did not ask for them", () => {
+    const worktrees: Worktree[] = [
+      makeWorktree({ path: "/r/apple", branch: "apple" }),
+      makeWorktree({ path: "/r/banana", branch: "banana" }),
+    ];
+
+    const sorted = sortWorktreesForDisplay(worktrees, {
+      mode: "branch",
+      dirtyPaths: new Set(["/r/banana"]),
+    });
+
+    expect(sorted.map((w) => w.path)).toEqual(["/r/apple", "/r/banana"]);
+  });
+
+  it("sorts by newest commit first in lastCommit mode", () => {
+    const worktrees: Worktree[] = [
+      makeWorktree({ path: "/r/apple", branch: "apple" }),
+      makeWorktree({ path: "/r/banana", branch: "banana" }),
+      makeWorktree({ path: "/r/cherry", branch: "cherry" }),
+    ];
+
+    const sorted = sortWorktreesForDisplay(worktrees, {
+      mode: "lastCommit",
+      timestamps: new Map([
+        ["/r/apple", { lastCommit: 100 }],
+        ["/r/banana", { lastCommit: 300 }],
+        ["/r/cherry", { lastCommit: 200 }],
+      ]),
+    });
+
+    expect(sorted.map((w) => w.path)).toEqual([
+      "/r/banana",
+      "/r/cherry",
+      "/r/apple",
+    ]);
+  });
+
+  it("sorts by newest worktree first in created mode", () => {
+    const worktrees: Worktree[] = [
+      makeWorktree({ path: "/r/apple", branch: "apple" }),
+      makeWorktree({ path: "/r/banana", branch: "banana" }),
+    ];
+
+    const sorted = sortWorktreesForDisplay(worktrees, {
+      mode: "created",
+      timestamps: new Map([
+        ["/r/apple", { created: 100 }],
+        ["/r/banana", { created: 200 }],
+      ]),
+    });
+
+    expect(sorted.map((w) => w.path)).toEqual(["/r/banana", "/r/apple"]);
+  });
+
+  it("sinks worktrees with no timestamp below those that have one", () => {
+    const worktrees: Worktree[] = [
+      makeWorktree({ path: "/r/apple", branch: "apple" }),
+      makeWorktree({ path: "/r/banana", branch: "banana" }),
+      makeWorktree({ path: "/r/cherry", branch: "cherry" }),
+    ];
+
+    const sorted = sortWorktreesForDisplay(worktrees, {
+      mode: "lastCommit",
+      timestamps: new Map([["/r/banana", { lastCommit: 1 }]]),
+    });
+
+    // banana has a timestamp, so it leads however old it is; the unknown rest
+    // fall back to alphabetical rather than to an arbitrary order.
+    expect(sorted.map((w) => w.path)).toEqual([
+      "/r/banana",
+      "/r/apple",
+      "/r/cherry",
+    ]);
+  });
+
+  it("falls back to alphabetical when timestamps tie", () => {
+    const worktrees: Worktree[] = [
+      makeWorktree({ path: "/r/cherry", branch: "cherry" }),
+      makeWorktree({ path: "/r/apple", branch: "apple" }),
+    ];
+
+    const sorted = sortWorktreesForDisplay(worktrees, {
+      mode: "lastCommit",
+      timestamps: new Map([
+        ["/r/apple", { lastCommit: 500 }],
+        ["/r/cherry", { lastCommit: 500 }],
+      ]),
+    });
+
+    expect(sorted.map((w) => w.path)).toEqual(["/r/apple", "/r/cherry"]);
+  });
+
+  it("keeps current-first and bare-last ahead of every timestamp mode", () => {
+    const worktrees: Worktree[] = [
+      makeWorktree({ path: "/r/bare", isBare: true }),
+      makeWorktree({ path: "/r/apple", branch: "apple" }),
+      makeWorktree({ path: "/r/banana", branch: "banana" }),
+    ];
+
+    const sorted = sortWorktreesForDisplay(worktrees, {
+      currentPath: "/r/apple",
+      mode: "lastCommit",
+      // The bare worktree looks newest and apple oldest, so an ordering that
+      // respected timestamps first would put both in the wrong place.
+      timestamps: new Map([
+        ["/r/bare", { lastCommit: 900 }],
+        ["/r/apple", { lastCommit: 100 }],
+        ["/r/banana", { lastCommit: 500 }],
+      ]),
+    });
+
+    expect(sorted.map((w) => w.path)).toEqual([
+      "/r/apple",
+      "/r/banana",
+      "/r/bare",
+    ]);
+  });
+
+  it("resolves timestamp keys by path, not by the string it was given", () => {
+    const worktrees: Worktree[] = [
+      makeWorktree({ path: "/r/apple", branch: "apple" }),
+      makeWorktree({ path: "/r/banana/", branch: "banana" }),
+    ];
+
+    const sorted = sortWorktreesForDisplay(worktrees, {
+      mode: "lastCommit",
+      timestamps: new Map([["/r/banana", { lastCommit: 900 }]]),
+    });
+
+    expect(sorted.map((w) => w.path)).toEqual(["/r/banana/", "/r/apple"]);
+  });
 });
 
 describe("worktreeMatchesFilter", () => {
