@@ -42,6 +42,16 @@ export function registerLifecycleCommands(
         await toggleLock(ctx, node);
       }),
     ),
+    // A separate command only so the inline button on a locked row can carry an
+    // open-padlock icon: an icon belongs to a command, not to a menu entry, and
+    // a closed padlock there would read as the row's locked state rather than as
+    // the action of unlocking it. The behaviour is the same toggle.
+    vscode.commands.registerCommand(
+      "betterWorktrees.worktree.unlockInline",
+      runCommand(async (node?: WorktreeNode) => {
+        await toggleLock(ctx, node);
+      }),
+    ),
     vscode.commands.registerCommand(
       "betterWorktrees.worktree.move",
       runCommand(async (node?: WorktreeNode) => {

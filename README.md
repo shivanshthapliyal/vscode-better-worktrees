@@ -95,6 +95,7 @@ The **Worktrees** view appears in the Explorer sidebar and groups worktrees by r
 - click **New Worktree…** in the view title to create one, or open the title menu for **Checkout Branch as Worktree…** and **Worktree from Pull Request…**
 - click the **search** icon in the view title to filter by branch or path; it becomes a clear-filter button while a filter is active
 - click a worktree row to focus the Source Control view on it
+- hover a worktree row for inline icons: reveal in the Explorer, open a terminal, lock or unlock, and remove. The lock icon reflects the current state, and the trash icon appears only where removal is allowed
 - right-click a worktree for the full set of fetch, pull, push, open, workspace, copy, lock, move, and remove actions
 - right-click a repository to create or check out a worktree, prune stale entries, or repair worktree links; a prune icon also appears inline on the row while it has anything stale to clear
 

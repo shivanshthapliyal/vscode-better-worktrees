@@ -6,6 +6,7 @@
 - *Move Worktree...* relocates a worktree through git, so the administrative files that record where it lives are rewritten too. Refused for the main, current-window, locked, and stale worktrees
 - *Repair Worktrees* re-points worktrees at their repository after the repository itself was moved or renamed on disk, and says so when nothing needed fixing
 - A prune icon appears inline on a repository row, but only while it actually has stale worktrees to clear
+- Lock and remove are now inline icons on a worktree row: an open padlock while locked, a closed one while not, and a trash icon only where removal is actually allowed — never on the main, current-window, or locked worktree. Removal keeps its confirmation, which names the branch and any uncommitted changes that would be lost
 - Fix the demo in the README not rendering on the Open VSX listing
 
 ## 0.4.2

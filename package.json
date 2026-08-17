@@ -190,6 +190,12 @@
         "icon": "$(lock)"
       },
       {
+        "command": "betterWorktrees.worktree.unlockInline",
+        "title": "Unlock Worktree",
+        "category": "Worktrees",
+        "icon": "$(unlock)"
+      },
+      {
         "command": "betterWorktrees.worktree.move",
         "title": "Move Worktree...",
         "category": "Worktrees",
@@ -219,6 +225,12 @@
       }
     ],
     "menus": {
+      "commandPalette": [
+        {
+          "command": "betterWorktrees.worktree.unlockInline",
+          "when": "false"
+        }
+      ],
       "view/title": [
         {
           "command": "betterWorktrees.createWorktree",
@@ -276,6 +288,21 @@
           "command": "betterWorktrees.worktree.openTerminal",
           "when": "view == betterWorktrees.worktrees && viewItem =~ /^worktree/",
           "group": "inline@2"
+        },
+        {
+          "command": "betterWorktrees.worktree.toggleLock",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /\\.unlocked/ && viewItem =~ /\\.lockable/",
+          "group": "inline@3"
+        },
+        {
+          "command": "betterWorktrees.worktree.unlockInline",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /\\.locked/ && viewItem =~ /\\.lockable/",
+          "group": "inline@3"
+        },
+        {
+          "command": "betterWorktrees.worktree.remove",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /\\.removable/",
+          "group": "inline@4"
         },
         {
           "command": "betterWorktrees.worktree.revealInSourceControl",
