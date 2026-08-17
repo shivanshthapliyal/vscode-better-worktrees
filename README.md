@@ -12,7 +12,9 @@
 
 A small wrapper extension that solves worktree visibility. It shows every git worktree in your Explorer sidebar, colour-coded by branch type, with uncommitted work, ahead/behind, and the current one visible at a glance, and adds `find`, `focus`, `prune stale` and `lock` alongside many other commands to manage worktrees and see their state.
 
-https://github.com/user-attachments/assets/ffd4ad7e-a03e-4e0d-adfa-8736c7335916
+<p align="center">
+  <img src="https://raw.githubusercontent.com/shivanshthapliyal/vscode-better-worktrees/HEAD/docs/better-worktrees-demo.gif" alt="Better Worktrees demo: the Worktrees view, per-worktree status, Source Control focus, filtering, and the command palette" width="720">
+</p>
 
 Worktrees let you keep several branches checked out at once, but the editor leaves you guessing which one has unsaved work and which the current window is on. Better Worktrees puts them all in one place and keeps every action one click away.
 
