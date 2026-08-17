@@ -2,7 +2,7 @@
   "name": "better-worktrees",
   "displayName": "Better Worktrees",
   "description": "Manage git worktrees from the Explorer: live status, Source Control scoping, and safe removal.",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "publisher": "shivanshthapliyal",
   "icon": "icon.png",
   "license": "MIT",
@@ -128,6 +128,12 @@
         "title": "Show Only This Worktree in Source Control",
         "category": "Worktrees",
         "icon": "$(source-control)"
+      },
+      {
+        "command": "betterWorktrees.worktree.addToSourceControl",
+        "title": "Add This Worktree to Source Control",
+        "category": "Worktrees",
+        "icon": "$(diff-added)"
       },
       {
         "command": "betterWorktrees.worktree.revealInExplorerView",
@@ -310,14 +316,19 @@
           "group": "1_open@1"
         },
         {
-          "command": "betterWorktrees.worktree.openInCurrentWindow",
+          "command": "betterWorktrees.worktree.addToSourceControl",
           "when": "view == betterWorktrees.worktrees && viewItem =~ /^worktree/",
           "group": "1_open@2"
         },
         {
-          "command": "betterWorktrees.worktree.openInNewWindow",
+          "command": "betterWorktrees.worktree.openInCurrentWindow",
           "when": "view == betterWorktrees.worktrees && viewItem =~ /^worktree/",
           "group": "1_open@3"
+        },
+        {
+          "command": "betterWorktrees.worktree.openInNewWindow",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /^worktree/",
+          "group": "1_open@4"
         },
         {
           "command": "betterWorktrees.worktree.revealInExplorerView",

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.4
+
+- *Add This Worktree to Source Control* adds one worktree to the Source Control view without closing anything, so the view can be built up worktree by worktree. The existing *Show Only This Worktree in Source Control* is unchanged and still narrows the view to one
+
 ## 0.4.3
 
 - *Push* in the worktree context menu, which sets the upstream on the first push so a newly created branch works without dropping to a terminal. Never force-pushes

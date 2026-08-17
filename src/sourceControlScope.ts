@@ -1,4 +1,5 @@
 import path from "node:path";
+import { formatWorktreeLabel } from "./display";
 import { Worktree, WorktreeNotifications } from "./types";
 
 /**
@@ -65,6 +66,53 @@ export async function scopeSourceControlToWorktree(
   }
 
   return others;
+}
+
+/**
+ * Registers one worktree in the Source Control view without touching what is
+ * already there, so the view accumulates worktrees instead of being narrowed to
+ * one. The counterpart to {@link scopeSourceControlToWorktree}, which gets its
+ * result by closing everything else.
+ *
+ * A worktree the extension itself scoped out is still remembered as closed by
+ * the caller. Reporting whether registration happened lets it drop that entry,
+ * or the next restore would reopen a repository that is already open.
+ */
+export async function addWorktreeToSourceControl(
+  worktree: Worktree,
+  deps: ScopeSourceControlDependencies,
+): Promise<boolean> {
+  if (worktree.isBare) {
+    deps.notifications.warning(
+      "Worktrees: A bare repository has no working copy to show in Source Control.",
+    );
+    return false;
+  }
+
+  const registered = await deps.listRegisteredRepositories();
+  const already = registered.some((repoPath) =>
+    samePath(repoPath, worktree.path),
+  );
+  const label = formatWorktreeLabel(worktree);
+
+  if (already) {
+    deps.notifications.info(
+      `Worktrees: ${label} is already in the Source Control view.`,
+    );
+    return false;
+  }
+
+  if (!(await deps.openRepository(worktree.path))) {
+    deps.notifications.warning(
+      "Worktrees: Could not add this worktree to Source Control.",
+    );
+    return false;
+  }
+
+  deps.notifications.info(
+    `Worktrees: Added ${label} to the Source Control view.`,
+  );
+  return true;
 }
 
 /**

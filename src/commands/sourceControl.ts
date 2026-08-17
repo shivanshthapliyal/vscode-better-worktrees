@@ -1,3 +1,4 @@
+import path from "node:path";
 import * as vscode from "vscode";
 import { runCommand } from "../commandRunner";
 import { listWorktrees } from "../git/cli";
@@ -6,6 +7,7 @@ import { resolveFolderUri } from "../prompts";
 import {
   addWorktreesToSourceControl,
   AddWorktreesDependencies,
+  addWorktreeToSourceControl,
   restoreSourceControlScope,
   ScopeSourceControlDependencies,
   scopeSourceControlToWorktree,
@@ -39,6 +41,12 @@ export function registerSourceControlCommands(
       }),
     ),
     vscode.commands.registerCommand(
+      "betterWorktrees.worktree.addToSourceControl",
+      runCommand(async (node?: WorktreeNode) => {
+        await addOneToSourceControl(ctx, node);
+      }),
+    ),
+    vscode.commands.registerCommand(
       "betterWorktrees.showAllWorktreesInSourceControl",
       runCommand(async () => {
         await showAll(ctx);
@@ -65,6 +73,31 @@ async function scopeToWorktree(
   }
 
   await rememberScopedOut(ctx, closed);
+  await vscode.commands.executeCommand("workbench.view.scm");
+}
+
+/**
+ * Adds one worktree to the Source Control view, leaving whatever is already
+ * there alone. Distinct from the scoping command above, which gets a single
+ * worktree in view by closing every other repository.
+ */
+async function addOneToSourceControl(
+  ctx: CommandContext,
+  node: WorktreeNode | undefined,
+): Promise<void> {
+  if (node?.kind !== "worktree") {
+    return;
+  }
+
+  const added = await addWorktreeToSourceControl(
+    node.worktree,
+    await scopeDependencies(ctx),
+  );
+  if (!added) {
+    return;
+  }
+
+  await forgetScopedOut(ctx, node.worktree.path);
   await vscode.commands.executeCommand("workbench.view.scm");
 }
 
@@ -148,4 +181,16 @@ async function rememberScopedOut(
 ): Promise<void> {
   const merged = new Set([...readScopedOut(ctx), ...paths]);
   await ctx.extension.workspaceState.update(SCOPED_OUT_KEY, [...merged]);
+}
+
+/** Drops a path scoping had closed, now that it is open in the view again. */
+async function forgetScopedOut(
+  ctx: CommandContext,
+  fsPath: string,
+): Promise<void> {
+  const target = path.resolve(fsPath);
+  const remaining = readScopedOut(ctx).filter(
+    (scoped) => path.resolve(scoped) !== target,
+  );
+  await ctx.extension.workspaceState.update(SCOPED_OUT_KEY, remaining);
 }

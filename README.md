@@ -46,7 +46,7 @@ Click a row to focus Source Control on it; right-click for the full action menu.
 | **From a pull request** | `gh pr checkout` into a fresh worktree, cross-fork PRs included.                                                           |
 | **Fetch / Pull / Push** | Per-worktree `fetch --all --prune`, fast-forward-only `pull`, and a `push` that sets the upstream on the first one. Never force-pushes. |
 | **Filter & sort**       | Filter the view by branch or path; sort worktrees with uncommitted changes first.                                          |
-| **Focus**               | Click a worktree to narrow Source Control to just that branch; restore all in one click.                                   |
+| **Focus**               | Click a worktree to narrow Source Control to just that branch, or add worktrees to it one at a time; restore all in one click. |
 | **Open**                | New or current window, workspace root, file manager, or a terminal, plus copy path/branch.                                |
 | **Manage safely**       | Lock/unlock with a reason, prune stale entries, move a worktree through git, and remove (guarded against the main, current, and locked worktrees). |
 | **Repair**              | Re-point worktrees at their repository after the repository was moved or renamed on disk.                                  |
@@ -94,7 +94,7 @@ The **Worktrees** view appears in the Explorer sidebar and groups worktrees by r
 
 - click **New Worktree…** in the view title to create one, or open the title menu for **Checkout Branch as Worktree…** and **Worktree from Pull Request…**
 - click the **search** icon in the view title to filter by branch or path; it becomes a clear-filter button while a filter is active
-- click a worktree row to focus the Source Control view on it
+- click a worktree row to focus the Source Control view on it, or right-click for *Add This Worktree to Source Control* to add it alongside whatever is already showing
 - hover a worktree row for inline icons: reveal in the Explorer, open a terminal, lock or unlock, and remove. The lock icon reflects the current state, and the trash icon appears only where removal is allowed
 - right-click a worktree for the full set of fetch, pull, push, open, workspace, copy, lock, move, and remove actions
 - right-click a repository to create or check out a worktree, prune stale entries, or repair worktree links; a prune icon also appears inline on the row while it has anything stale to clear

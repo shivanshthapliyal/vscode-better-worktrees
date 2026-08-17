@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   addWorktreesToSourceControl,
   AddWorktreesDependencies,
+  addWorktreeToSourceControl,
   getWorktreePathsToRegister,
   restoreSourceControlScope,
   ScopeSourceControlDependencies,
@@ -95,6 +96,79 @@ describe("scopeSourceControlToWorktree", () => {
 
     expect(closed).toEqual([]);
     expect(deps.closeRepository).not.toHaveBeenCalled();
+  });
+});
+
+describe("addWorktreeToSourceControl", () => {
+  it("registers the worktree without closing anything", async () => {
+    const deps = createDeps({
+      listRegisteredRepositories: vi.fn(async () => OTHERS),
+    });
+
+    expect(await addWorktreeToSourceControl(makeWorktree({ path: TARGET }), deps)).toBe(
+      true,
+    );
+    expect(deps.openRepository).toHaveBeenCalledWith(TARGET);
+    expect(deps.closeRepository).not.toHaveBeenCalled();
+  });
+
+  /**
+   * Registering an already-open repository is a no-op in the editor, so a
+   * silent success would look like nothing happened at all.
+   */
+  it("says so and skips the call when the worktree is already there", async () => {
+    const deps = createDeps();
+
+    expect(
+      await addWorktreeToSourceControl(
+        makeWorktree({ path: TARGET, branch: "feature" }),
+        deps,
+      ),
+    ).toBe(false);
+    expect(deps.openRepository).not.toHaveBeenCalled();
+    expect(deps.notifications.info).toHaveBeenCalledWith(
+      expect.stringContaining("already in the Source Control view"),
+    );
+  });
+
+  it("recognises an already-registered worktree across path normalization", async () => {
+    const deps = createDeps({
+      listRegisteredRepositories: vi.fn(async () => [`${TARGET}/`, "/repo"]),
+    });
+
+    expect(await addWorktreeToSourceControl(makeWorktree({ path: TARGET }), deps)).toBe(
+      false,
+    );
+    expect(deps.openRepository).not.toHaveBeenCalled();
+  });
+
+  it("warns when the worktree could not be registered", async () => {
+    const deps = createDeps({
+      listRegisteredRepositories: vi.fn(async () => OTHERS),
+      openRepository: vi.fn(async () => false),
+    });
+
+    expect(await addWorktreeToSourceControl(makeWorktree({ path: TARGET }), deps)).toBe(
+      false,
+    );
+    expect(deps.notifications.warning).toHaveBeenCalledWith(
+      expect.stringContaining("Could not add this worktree"),
+    );
+  });
+
+  it("refuses a bare repository, which has no working copy to show", async () => {
+    const deps = createDeps({
+      listRegisteredRepositories: vi.fn(async () => OTHERS),
+    });
+
+    expect(
+      await addWorktreeToSourceControl(
+        makeWorktree({ path: "/repo/bare", isBare: true }),
+        deps,
+      ),
+    ).toBe(false);
+    expect(deps.openRepository).not.toHaveBeenCalled();
+    expect(deps.notifications.warning).toHaveBeenCalled();
   });
 });
 
