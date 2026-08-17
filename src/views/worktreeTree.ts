@@ -130,9 +130,7 @@ export class WorktreeTreeProvider
       repo.label,
       vscode.TreeItemCollapsibleState.Expanded,
     );
-    item.contextValue = hasStaleWorktrees(repo.worktrees)
-      ? "repo.hasStale"
-      : "repo";
+    item.contextValue = repoContextValue(repo.worktrees);
     item.iconPath = new vscode.ThemeIcon("repo");
     item.resourceUri = vscode.Uri.file(repo.rootPath);
     item.tooltip = repo.rootPath;
@@ -185,7 +183,7 @@ export class WorktreeTreeProvider
  * Encodes the states menus filter on. Removability reuses the same check as the
  * remove command, so a row can never offer an action the command would refuse.
  */
-function buildContextValue(
+export function buildContextValue(
   worktree: Worktree,
   context: RemovalContext,
 ): string {
@@ -196,6 +194,11 @@ function buildContextValue(
   ].filter(Boolean);
 
   return ["worktree", ...flags].join(".");
+}
+
+/** The repo row's counterpart to {@link buildContextValue}. */
+export function repoContextValue(worktrees: readonly Worktree[]): string {
+  return hasStaleWorktrees(worktrees) ? "repo.hasStale" : "repo";
 }
 
 /**

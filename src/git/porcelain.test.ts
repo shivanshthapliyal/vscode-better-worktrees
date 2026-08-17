@@ -95,4 +95,51 @@ describe("parseWorktreeList", () => {
   it("returns nothing for empty output", () => {
     expect(parseWorktreeList("")).toEqual([]);
   });
+
+  it("starts a new record on a worktree line even without a blank separator", () => {
+    const worktrees = parseWorktreeList(
+      [
+        "worktree /home/dev/a",
+        "branch refs/heads/one",
+        "worktree /home/dev/b",
+        "branch refs/heads/two",
+      ].join("\n"),
+    );
+
+    expect(worktrees.map((w) => [w.path, w.branch])).toEqual([
+      ["/home/dev/a", "one"],
+      ["/home/dev/b", "two"],
+    ]);
+  });
+
+  it("ignores attribute lines that appear before any worktree line", () => {
+    // Stray leading attributes would otherwise be attached to the first real
+    // record and mark an ordinary worktree as locked.
+    const worktrees = parseWorktreeList(
+      ["locked", "HEAD abc", "worktree /home/dev/a", "branch refs/heads/one"].join(
+        "\n",
+      ),
+    );
+
+    expect(worktrees).toHaveLength(1);
+    expect(worktrees[0].isLocked).toBe(false);
+    expect(worktrees[0].head).toBeUndefined();
+  });
+
+  it("keeps a path containing spaces intact", () => {
+    const worktrees = parseWorktreeList(
+      ["worktree /home/dev/my worktree", "branch refs/heads/main", ""].join("\n"),
+    );
+
+    expect(worktrees[0].path).toBe("/home/dev/my worktree");
+  });
+
+  it("tolerates carriage returns from git on Windows", () => {
+    const worktrees = parseWorktreeList(
+      ["worktree /c/dev/a\r", "branch refs/heads/main\r", "\r"].join("\n"),
+    );
+
+    expect(worktrees[0].path).toBe("/c/dev/a");
+    expect(worktrees[0].branch).toBe("main");
+  });
 });

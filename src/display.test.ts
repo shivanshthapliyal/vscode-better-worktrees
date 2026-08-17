@@ -84,6 +84,26 @@ describe("formatWorktreeLabel", () => {
     ).toBe("detached @ abcdef1");
     expect(formatWorktreeLabel(makeWorktree({ isBare: true }))).toBe("(bare)");
   });
+
+  it("falls back to the directory name when there is no branch and no detached flag", () => {
+    expect(formatWorktreeLabel(makeWorktree({ path: "/repos/scratch-dir" }))).toBe(
+      "scratch-dir",
+    );
+  });
+
+  it("says unknown rather than rendering an empty detached label", () => {
+    expect(
+      formatWorktreeLabel(makeWorktree({ isDetached: true, head: undefined })),
+    ).toBe("detached @ unknown");
+  });
+
+  it("prefers the branch over the detached flag when a worktree has both", () => {
+    expect(
+      formatWorktreeLabel(
+        makeWorktree({ branch: "feature/login", isDetached: true }),
+      ),
+    ).toBe("feature/login");
+  });
 });
 
 describe("sortWorktreesForDisplay", () => {
@@ -186,6 +206,20 @@ describe("badges and colours", () => {
     expect(worktreeBadge(makeWorktree({ branch: "main" }))).toBe("MA");
     expect(worktreeBadge(makeWorktree({ isDetached: true }))).toBe("DT");
     expect(worktreeBadge(makeWorktree({ isBare: true }))).toBe("BA");
+  });
+
+  it("badges an unbranched worktree from its directory name", () => {
+    expect(worktreeBadge(makeWorktree({ path: "/repos/hotfix" }))).toBe("HO");
+  });
+
+  it("keeps a badge for a branch segment with no alphanumerics left to take", () => {
+    // Stripping non-alphanumerics can empty the segment; falling back to the raw
+    // segment keeps the decoration from rendering as a blank box.
+    expect(worktreeBadge(makeWorktree({ branch: "feat/+++" }))).toBe("++");
+  });
+
+  it("returns a one-character badge rather than padding a short branch", () => {
+    expect(worktreeBadge(makeWorktree({ branch: "x" }))).toBe("X");
   });
 
   it("assigns a stable palette index within range for a key", () => {
@@ -327,5 +361,20 @@ describe("shortenHomePath", () => {
       "~/repos/app",
     );
     expect(shortenHomePath("/opt/app", "/home/dev")).toBe("/opt/app");
+  });
+
+  it("shortens the home directory itself to a bare tilde", () => {
+    expect(shortenHomePath("/home/dev", "/home/dev")).toBe("~");
+  });
+
+  it("tolerates a trailing separator on the home directory", () => {
+    expect(shortenHomePath("/home/dev/repos", "/home/dev/")).toBe("~/repos");
+  });
+
+  it("does not shorten a sibling directory that merely shares the home prefix", () => {
+    // Matching on the prefix alone would turn /home/devtools into ~tools.
+    expect(shortenHomePath("/home/devtools/app", "/home/dev")).toBe(
+      "/home/devtools/app",
+    );
   });
 });
