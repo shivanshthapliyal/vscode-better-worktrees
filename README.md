@@ -45,7 +45,7 @@ Click a row to focus Source Control on it; right-click for the full action menu.
 | **Check out existing**  | Pick a local or remote-tracking branch (skipping ones already in a worktree) and get a worktree on it.                     |
 | **From a pull request** | `gh pr checkout` into a fresh worktree, cross-fork PRs included.                                                           |
 | **Fetch / Pull / Push** | Per-worktree `fetch --all --prune`, fast-forward-only `pull`, and a `push` that sets the upstream on the first one. Never force-pushes. |
-| **Filter & sort**       | Filter the view by branch or path; sort worktrees with uncommitted changes first.                                          |
+| **Filter & sort**       | Filter the view by branch or path; sort by branch name, uncommitted changes, last commit, or when the worktree was created. |
 | **Focus**               | Click a worktree to narrow Source Control to just that branch, or add worktrees to it one at a time; restore all in one click. |
 | **Open**                | New or current window, workspace root, file manager, or a terminal, plus copy path/branch.                                |
 | **Manage safely**       | Lock/unlock with a reason, prune stale entries, move a worktree through git, and remove (guarded against the main, current, and locked worktrees). |
@@ -94,6 +94,7 @@ The **Worktrees** view appears in the Explorer sidebar and groups worktrees by r
 
 - click **New Worktree…** in the view title to create one, or open the title menu for **Checkout Branch as Worktree…** and **Worktree from Pull Request…**
 - click the **search** icon in the view title to filter by branch or path; it becomes a clear-filter button while a filter is active
+- open the title menu for **Sort Worktrees By...** to order the list by branch name, uncommitted changes, last commit, or creation time
 - click a worktree row to focus the Source Control view on it, or right-click for *Add This Worktree to Source Control* to add it alongside whatever is already showing
 - hover a worktree row for inline icons: reveal in the Explorer, open a terminal, lock or unlock, and remove. The lock icon reflects the current state, and the trash icon appears only where removal is allowed
 - right-click a worktree for the full set of fetch, pull, push, open, workspace, copy, lock, move, and remove actions
@@ -112,8 +113,25 @@ All commands are also available from the Command Palette under the **Worktrees:*
 | `betterWorktrees.worktreePathTemplate` | `${repoPath}/../${repoName}-${branch}` | Where new worktrees are suggested (see below).                                                                                                                                                    |
 | `betterWorktrees.colorMode`            | `branch`                               | How worktree folders are coloured: `branch` (a distinct hashed colour per branch) or `branchType` (a colour per branch kind; see below).                                                         |
 | `betterWorktrees.branchTypeMap`        | `{}`                                   | Overrides for the branch-prefix → type mapping used in `branchType` mode. Merged over the built-in defaults.                                                                                      |
-| `betterWorktrees.sortDirtyFirst`       | `false`                                | Sort worktrees with uncommitted changes ahead of clean ones. Toggle from the view title.                                                                                                          |
+| `betterWorktrees.sortBy`               | `branch`                               | The order worktrees appear in: `branch`, `dirtyFirst`, `lastCommit`, or `created`. Change it from the view title (see below).                                                                     |
 
+
+### Sorting worktrees
+
+*Sort Worktrees By...* in the view title offers four orders:
+
+| Mode | Order |
+| --- | --- |
+| `branch` | Alphabetical by branch name (the default) |
+| `dirtyFirst` | Worktrees with uncommitted changes first |
+| `lastCommit` | Most recently committed first, so the branches you are actually working on lead |
+| `created` | Most recently created worktree first |
+
+Every mode keeps the current window's worktree at the top and bare worktrees at the bottom, so the list stays easy to orient in whichever order you pick. Within a mode, ties fall back to the branch name rather than to an arbitrary order.
+
+A worktree whose time cannot be read sorts *after* the ones that can, rather than being treated as the oldest — a stale worktree is unknown, not ancient. Git records no creation time for a worktree, so `created` uses the timestamp of the `.git` file git writes when the worktree is added; the main worktree has no such file and therefore no creation time.
+
+`lastCommit` and `created` read timestamps in the background, and only while one of those modes is selected, so the default orders cost no extra git calls.
 
 ### Colouring worktrees
 

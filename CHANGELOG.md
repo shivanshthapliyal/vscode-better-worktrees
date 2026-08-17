@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0
+
+- Four sort orders instead of one, chosen through *Sort Worktrees By...* in the view title: by branch name, by uncommitted changes, by last commit, or by when the worktree was created. Every order still keeps the current window's worktree first and bare worktrees last, and ties fall back to the branch name
+- Sorting by last commit or creation time reads those timestamps in the background, and only while such an order is selected, so the default orders cost no extra git calls. A worktree whose time cannot be read sorts after the ones that can, rather than being treated as the oldest
+- `betterWorktrees.sortDirtyFirst` is superseded by `betterWorktrees.sortBy`. An existing `sortDirtyFirst` keeps working, and choosing an order from the view title migrates it
+
 ## 0.4.4
 
 - *Add This Worktree to Source Control* adds one worktree to the Source Control view without closing anything, so the view can be built up worktree by worktree. The existing *Show Only This Worktree in Source Control* is unchanged and still narrows the view to one
