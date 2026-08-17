@@ -9,7 +9,11 @@ import {
   sortWorktreesForDisplay,
   worktreeMatchesFilter,
 } from "../display";
-import { checkWorktreeRemovable, RemovalContext } from "../removal";
+import {
+  checkWorktreeRemovable,
+  hasStaleWorktrees,
+  RemovalContext,
+} from "../removal";
 import { RepoManager } from "../repoManager";
 import { RepoGroup, Worktree, WorktreeStatus } from "../types";
 
@@ -126,7 +130,9 @@ export class WorktreeTreeProvider
       repo.label,
       vscode.TreeItemCollapsibleState.Expanded,
     );
-    item.contextValue = "repo";
+    item.contextValue = hasStaleWorktrees(repo.worktrees)
+      ? "repo.hasStale"
+      : "repo";
     item.iconPath = new vscode.ThemeIcon("repo");
     item.resourceUri = vscode.Uri.file(repo.rootPath);
     item.tooltip = repo.rootPath;

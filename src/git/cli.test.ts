@@ -22,10 +22,14 @@ vi.mock("../logger", () => ({ log: vi.fn() }));
 
 import {
   createWorktree,
+  hasUpstream,
   isValidBranchName,
   listStartPoints,
+  moveWorktree,
   pruneWorktrees,
+  pushWorktree,
   removeWorktree,
+  repairWorktrees,
   setWorktreeLock,
 } from "./cli";
 
@@ -137,6 +141,117 @@ describe("git worktree argv construction", () => {
 
   it("does not let a dash-leading worktree path become a flag on add", async () => {
     await createWorktree("/repo", "-f", "feat/x", "HEAD");
+    const args = lastArgs();
+    expect(args.indexOf("-f")).toBeGreaterThan(args.indexOf("--"));
+  });
+
+  it("separates both path operands on move", async () => {
+    await moveWorktree("/repo", "/repo/wt", "/elsewhere/wt");
+    expect(lastArgs()).toEqual([
+      "-C",
+      "/repo",
+      "worktree",
+      "move",
+      "--",
+      "/repo/wt",
+      "/elsewhere/wt",
+    ]);
+  });
+
+  it("does not let dash-leading paths become flags on move", async () => {
+    await moveWorktree("/repo", "-f", "-g");
+    const args = lastArgs();
+    expect(args.indexOf("-f")).toBeGreaterThan(args.indexOf("--"));
+    expect(args.indexOf("-g")).toBeGreaterThan(args.indexOf("--"));
+  });
+
+  it("repairs against the given repo only", async () => {
+    await repairWorktrees("/repo");
+    expect(lastArgs()).toEqual(["-C", "/repo", "worktree", "repair"]);
+  });
+});
+
+describe("repairWorktrees", () => {
+  beforeEach(() => {
+    calls.length = 0;
+    mock.stdout = "";
+    mock.fail = false;
+  });
+
+  /**
+   * git reports each file it fixed and prints nothing when there was no damage.
+   * The caller distinguishes those outcomes, so an empty report has to stay
+   * empty rather than becoming a generic success.
+   */
+  it("returns git's report of what it fixed", async () => {
+    mock.stdout = "repair: .git file broken: /repo/wt\n";
+    expect(await repairWorktrees("/repo")).toBe(
+      "repair: .git file broken: /repo/wt",
+    );
+  });
+
+  it("returns nothing when there was nothing to repair", async () => {
+    expect(await repairWorktrees("/repo")).toBe("");
+  });
+});
+
+describe("hasUpstream", () => {
+  beforeEach(() => {
+    calls.length = 0;
+    mock.stdout = "";
+    mock.fail = false;
+  });
+
+  it("asks git for the branch's upstream in the worktree's own directory", async () => {
+    expect(await hasUpstream("/repo/wt")).toBe(true);
+    expect(lastArgs()).toEqual([
+      "-C",
+      "/repo/wt",
+      "rev-parse",
+      "--abbrev-ref",
+      "--symbolic-full-name",
+      "@{upstream}",
+    ]);
+  });
+
+  it("treats git's failure as no upstream, which is how git reports it", async () => {
+    mock.fail = true;
+    expect(await hasUpstream("/repo/wt")).toBe(false);
+  });
+});
+
+describe("pushWorktree", () => {
+  beforeEach(() => {
+    calls.length = 0;
+    mock.stdout = "";
+    mock.fail = false;
+  });
+
+  it("pushes from the worktree's own directory", async () => {
+    await pushWorktree("/repo/wt", undefined);
+    expect(lastArgs()).toEqual(["-C", "/repo/wt", "push"]);
+  });
+
+  /**
+   * A branch with no upstream cannot be pushed by a bare `git push`, and that is
+   * the common case for a freshly created worktree — the whole point of the
+   * extension. Setting the upstream is what makes the action work first time.
+   */
+  it("sets the upstream when the branch has none", async () => {
+    await pushWorktree("/repo/wt", "feat/x");
+    expect(lastArgs()).toEqual([
+      "-C",
+      "/repo/wt",
+      "push",
+      "--set-upstream",
+      "origin",
+      "--",
+      "feat/x",
+    ]);
+  });
+
+  it("does not let a dash-leading branch become a flag", async () => {
+    await pushWorktree("/repo/wt", "-f");
     const args = lastArgs();
     expect(args.indexOf("-f")).toBeGreaterThan(args.indexOf("--"));
   });

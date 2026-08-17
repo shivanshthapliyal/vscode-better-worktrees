@@ -101,6 +101,48 @@ export async function pruneWorktrees(repoPath: string): Promise<void> {
 }
 
 /**
+ * Relocates a worktree, updating the administrative files that record where it
+ * lives. Moving the directory by hand instead leaves those pointing at the old
+ * path, which is the breakage `repairWorktrees` exists to undo.
+ */
+export async function moveWorktree(
+  repoPath: string,
+  from: string,
+  to: string,
+): Promise<void> {
+  await execFileAsync("git", [
+    "-C",
+    repoPath,
+    "worktree",
+    "move",
+    "--",
+    from,
+    to,
+  ]);
+}
+
+/**
+ * Re-points each worktree's `.git` file at the repository. This is the fix for
+ * the repository itself having been moved or renamed on disk, which leaves
+ * every worktree aimed at a path that no longer exists.
+ *
+ * It deliberately does not repair a *moved worktree*: git needs the new
+ * location passed as an operand for that, and `moveWorktree` avoids the
+ * situation in the first place.
+ *
+ * Returns git's report of what it fixed, which is empty when nothing needed it.
+ */
+export async function repairWorktrees(repoPath: string): Promise<string> {
+  const { stdout, stderr } = await execFileAsync("git", [
+    "-C",
+    repoPath,
+    "worktree",
+    "repair",
+  ]);
+  return `${stdout}${stderr}`.trim();
+}
+
+/**
  * Creates a worktree on a new branch. Errors are deliberately not swallowed:
  * git refuses clearly when the branch already exists or the target directory
  * is occupied, and that message is more useful than anything invented here.
@@ -246,6 +288,42 @@ export async function fetchWorktree(worktreePath: string): Promise<void> {
  */
 export async function pullWorktree(worktreePath: string): Promise<void> {
   await execFileAsync("git", ["-C", worktreePath, "pull", "--ff-only"]);
+}
+
+/**
+ * Pushes a worktree's branch. Pass `setUpstreamFor` when the branch has no
+ * upstream: a plain `git push` fails in that case, which is the norm for a
+ * branch this extension just created, so the first push has to establish it.
+ *
+ * Never force-pushes. A menu click should not be able to overwrite a remote
+ * branch, so a rejected non-fast-forward is left as git's error to report.
+ */
+export async function pushWorktree(
+  worktreePath: string,
+  setUpstreamFor: string | undefined,
+): Promise<void> {
+  const args = ["-C", worktreePath, "push"];
+  if (setUpstreamFor) {
+    args.push("--set-upstream", "origin", "--", setUpstreamFor);
+  }
+  await execFileAsync("git", args);
+}
+
+/** Whether the branch checked out in a worktree has an upstream configured. */
+export async function hasUpstream(worktreePath: string): Promise<boolean> {
+  try {
+    await execFileAsync("git", [
+      "-C",
+      worktreePath,
+      "rev-parse",
+      "--abbrev-ref",
+      "--symbolic-full-name",
+      "@{upstream}",
+    ]);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Whether the GitHub CLI is on the PATH, for the PR-checkout flow. */

@@ -2,7 +2,7 @@
   "name": "better-worktrees",
   "displayName": "Better Worktrees",
   "description": "Manage git worktrees from the Explorer: live status, Source Control scoping, and safe removal.",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "publisher": "shivanshthapliyal",
   "icon": "icon.png",
   "license": "MIT",
@@ -83,6 +83,12 @@
         "icon": "$(arrow-down)"
       },
       {
+        "command": "betterWorktrees.worktree.push",
+        "title": "Push",
+        "category": "Worktrees",
+        "icon": "$(arrow-up)"
+      },
+      {
         "command": "betterWorktrees.openWorktree",
         "title": "Open Worktree...",
         "category": "Worktrees"
@@ -110,6 +116,12 @@
         "title": "Prune Stale Worktrees",
         "category": "Worktrees",
         "icon": "$(trash)"
+      },
+      {
+        "command": "betterWorktrees.repairWorktrees",
+        "title": "Repair Worktrees",
+        "category": "Worktrees",
+        "icon": "$(tools)"
       },
       {
         "command": "betterWorktrees.worktree.revealInSourceControl",
@@ -178,6 +190,12 @@
         "icon": "$(lock)"
       },
       {
+        "command": "betterWorktrees.worktree.move",
+        "title": "Move Worktree...",
+        "category": "Worktrees",
+        "icon": "$(arrow-right)"
+      },
+      {
         "command": "betterWorktrees.worktree.remove",
         "title": "Remove Worktree...",
         "category": "Worktrees",
@@ -241,6 +259,11 @@
           "command": "betterWorktrees.toggleSortDirtyFirst",
           "when": "view == betterWorktrees.worktrees",
           "group": "2_view@1"
+        },
+        {
+          "command": "betterWorktrees.repairWorktrees",
+          "when": "view == betterWorktrees.worktrees",
+          "group": "3_manage@1"
         }
       ],
       "view/item/context": [
@@ -305,6 +328,11 @@
           "group": "3_git@2"
         },
         {
+          "command": "betterWorktrees.worktree.push",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /^worktree/",
+          "group": "3_git@3"
+        },
+        {
           "command": "betterWorktrees.worktree.copyPath",
           "when": "view == betterWorktrees.worktrees && viewItem =~ /^worktree/",
           "group": "4_copy@1"
@@ -320,39 +348,54 @@
           "group": "5_manage@1"
         },
         {
-          "command": "betterWorktrees.worktree.remove",
+          "command": "betterWorktrees.worktree.move",
           "when": "view == betterWorktrees.worktrees && viewItem =~ /\\.removable/",
           "group": "5_manage@2"
         },
         {
-          "command": "betterWorktrees.createWorktree",
-          "when": "view == betterWorktrees.worktrees && viewItem == repo",
-          "group": "inline@1"
+          "command": "betterWorktrees.worktree.remove",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /\\.removable/",
+          "group": "5_manage@3"
         },
         {
           "command": "betterWorktrees.createWorktree",
-          "when": "view == betterWorktrees.worktrees && viewItem == repo",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /^repo/",
+          "group": "inline@1"
+        },
+        {
+          "command": "betterWorktrees.pruneWorktrees",
+          "when": "view == betterWorktrees.worktrees && viewItem == repo.hasStale",
+          "group": "inline@2"
+        },
+        {
+          "command": "betterWorktrees.createWorktree",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /^repo/",
           "group": "1_repo@1"
         },
         {
           "command": "betterWorktrees.checkoutWorktree",
-          "when": "view == betterWorktrees.worktrees && viewItem == repo",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /^repo/",
           "group": "1_repo@2"
         },
         {
           "command": "betterWorktrees.worktreeFromPullRequest",
-          "when": "view == betterWorktrees.worktrees && viewItem == repo",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /^repo/",
           "group": "1_repo@3"
         },
         {
           "command": "betterWorktrees.addWorktreesToSourceControl",
-          "when": "view == betterWorktrees.worktrees && viewItem == repo",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /^repo/",
           "group": "2_repo@1"
         },
         {
           "command": "betterWorktrees.pruneWorktrees",
-          "when": "view == betterWorktrees.worktrees && viewItem == repo",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /^repo/",
           "group": "2_repo@2"
+        },
+        {
+          "command": "betterWorktrees.repairWorktrees",
+          "when": "view == betterWorktrees.worktrees && viewItem =~ /^repo/",
+          "group": "2_repo@3"
         }
       ]
     },

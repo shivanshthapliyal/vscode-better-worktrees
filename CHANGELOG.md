@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.3
+
+- *Push* in the worktree context menu, which sets the upstream on the first push so a newly created branch works without dropping to a terminal. Never force-pushes
+- *Move Worktree...* relocates a worktree through git, so the administrative files that record where it lives are rewritten too. Refused for the main, current-window, locked, and stale worktrees
+- *Repair Worktrees* re-points worktrees at their repository after the repository itself was moved or renamed on disk, and says so when nothing needed fixing
+- A prune icon appears inline on a repository row, but only while it actually has stale worktrees to clear
+- Fix the demo in the README not rendering on the Open VSX listing
+
 ## 0.4.2
 
 - Fix repositories being missed when the scanned folder itself holds a leftover `.git` file: a `.git` file whose `gitdir` no longer exists is no longer treated as a repository, so the scan keeps descending instead of reporting the folder as one unusable repo

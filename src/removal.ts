@@ -94,6 +94,62 @@ export function describeRemoval(
   };
 }
 
+export type MoveCheck = { movable: true } | { movable: false; reason: string };
+
+/**
+ * Guards `git worktree move`. The first two refusals mirror git's own — it
+ * rejects the main worktree outright and a locked one without a double
+ * `--force` — so failing here produces a clearer message than git's. Refusing
+ * the current window is this extension's addition: git would succeed and leave
+ * the open folder pointing at a path that no longer exists.
+ */
+export function checkWorktreeMovable(
+  worktree: Worktree,
+  context: RemovalContext,
+): MoveCheck {
+  if (context.isMainWorktree) {
+    return {
+      movable: false,
+      reason: "This is the main worktree of the repository and cannot be moved.",
+    };
+  }
+
+  if (context.isCurrentWindow) {
+    return {
+      movable: false,
+      reason:
+        "This worktree is open in this window. Switch to another folder first, then move it.",
+    };
+  }
+
+  if (worktree.isLocked) {
+    const because = worktree.lockReason ? ` (${worktree.lockReason})` : "";
+    return {
+      movable: false,
+      reason: `This worktree is locked${because}. Unlock it before moving.`,
+    };
+  }
+
+  if (worktree.isPrunable) {
+    return {
+      movable: false,
+      reason:
+        "This worktree is already stale on disk, so there is nothing to move. Use Prune Worktrees to clear it.",
+    };
+  }
+
+  return { movable: true };
+}
+
+/**
+ * Whether a repository has anything for prune to clear. The tree gates the
+ * inline prune icon on this: an always-visible destructive icon next to every
+ * repository invites a click that does nothing, or worse becomes muscle memory.
+ */
+export function hasStaleWorktrees(worktrees: readonly Worktree[]): boolean {
+  return worktrees.some((worktree) => worktree.isPrunable);
+}
+
 export interface StaleGroup<T> {
   group: T;
   stale: Worktree[];

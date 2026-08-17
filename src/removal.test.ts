@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  checkWorktreeMovable,
   checkWorktreeRemovable,
   describeRemoval,
+  hasStaleWorktrees,
   RemovalContext,
   selectStaleGroups,
 } from "./removal";
@@ -122,6 +124,75 @@ describe("describeRemoval", () => {
 
     expect(result.message).toContain("detached @ 1111111");
     expect(result.detail).toContain("/repo/.worktrees/feature");
+  });
+});
+
+describe("checkWorktreeMovable", () => {
+  it("allows moving an ordinary linked worktree", () => {
+    expect(checkWorktreeMovable(worktree(), context())).toEqual({
+      movable: true,
+    });
+  });
+
+  it("refuses to move the main worktree, which git cannot relocate", () => {
+    const result = checkWorktreeMovable(
+      worktree(),
+      context({ isMainWorktree: true }),
+    );
+
+    expect(result.movable).toBe(false);
+    expect(result).toHaveProperty("reason", expect.stringContaining("main"));
+  });
+
+  it("refuses to move the worktree open in this window", () => {
+    const result = checkWorktreeMovable(
+      worktree(),
+      context({ isCurrentWindow: true }),
+    );
+
+    expect(result.movable).toBe(false);
+    expect(result).toHaveProperty(
+      "reason",
+      expect.stringContaining("this window"),
+    );
+  });
+
+  it("refuses to move a locked worktree and names the lock reason", () => {
+    const result = checkWorktreeMovable(
+      worktree({ isLocked: true, lockReason: "waiting for CI" }),
+      context(),
+    );
+
+    expect(result.movable).toBe(false);
+    expect(result).toHaveProperty(
+      "reason",
+      expect.stringContaining("waiting for CI"),
+    );
+  });
+
+  it("refuses to move a stale worktree, whose directory is already gone", () => {
+    const result = checkWorktreeMovable(
+      worktree({ isPrunable: true }),
+      context(),
+    );
+
+    expect(result.movable).toBe(false);
+  });
+});
+
+describe("hasStaleWorktrees", () => {
+  it("is false for a repository with nothing to prune", () => {
+    expect(hasStaleWorktrees([worktree(), worktree()])).toBe(false);
+  });
+
+  it("is true as soon as one worktree is stale", () => {
+    expect(hasStaleWorktrees([worktree(), worktree({ isPrunable: true })])).toBe(
+      true,
+    );
+  });
+
+  it("is false for a repository with no worktrees at all", () => {
+    expect(hasStaleWorktrees([])).toBe(false);
   });
 });
 

@@ -44,11 +44,12 @@ Click a row to focus Source Control on it; right-click for the full action menu.
 | **Create**              | Walk through a branch name, start point, and destination, suggested from a template and editable before anything is written. |
 | **Check out existing**  | Pick a local or remote-tracking branch (skipping ones already in a worktree) and get a worktree on it.                     |
 | **From a pull request** | `gh pr checkout` into a fresh worktree, cross-fork PRs included.                                                           |
-| **Fetch / Pull**        | Per-worktree `fetch --all --prune` and fast-forward-only `pull`, reflected in its status.                                  |
+| **Fetch / Pull / Push** | Per-worktree `fetch --all --prune`, fast-forward-only `pull`, and a `push` that sets the upstream on the first one. Never force-pushes. |
 | **Filter & sort**       | Filter the view by branch or path; sort worktrees with uncommitted changes first.                                          |
 | **Focus**               | Click a worktree to narrow Source Control to just that branch; restore all in one click.                                   |
 | **Open**                | New or current window, workspace root, file manager, or a terminal, plus copy path/branch.                                |
-| **Manage safely**       | Lock/unlock with a reason, prune stale entries, and remove (guarded against the main, current, and locked worktrees).      |
+| **Manage safely**       | Lock/unlock with a reason, prune stale entries, move a worktree through git, and remove (guarded against the main, current, and locked worktrees). |
+| **Repair**              | Re-point worktrees at their repository after the repository was moved or renamed on disk.                                  |
 
 
 Branch names are validated by git, slashes are flattened so `feat/api` stays one folder, and every git call runs through `execFile` (never a shell string).
@@ -94,7 +95,8 @@ The **Worktrees** view appears in the Explorer sidebar and groups worktrees by r
 - click **New Worktree…** in the view title to create one, or open the title menu for **Checkout Branch as Worktree…** and **Worktree from Pull Request…**
 - click the **search** icon in the view title to filter by branch or path; it becomes a clear-filter button while a filter is active
 - click a worktree row to focus the Source Control view on it
-- right-click a worktree for the full set of fetch, pull, open, workspace, copy, lock, and remove actions
+- right-click a worktree for the full set of fetch, pull, push, open, workspace, copy, lock, move, and remove actions
+- right-click a repository to create or check out a worktree, prune stale entries, or repair worktree links; a prune icon also appears inline on the row while it has anything stale to clear
 
 All commands are also available from the Command Palette under the **Worktrees:** category.
 
