@@ -7,6 +7,7 @@ import { Worktree } from "./types";
 
 vi.mock("vscode", () => ({}), { virtual: true });
 
+import { WORKTREE_SORT_MODES } from "./display";
 import { VIEW_ID } from "./extension";
 import { buildContextValue, repoContextValue } from "./views/worktreeTree";
 
@@ -164,6 +165,31 @@ describe("contributes.configuration against config.ts", () => {
 
   it("watches only settings that exist", () => {
     expect(watched.filter((key) => !declaredSettings.includes(key))).toEqual([]);
+  });
+
+  /**
+   * The sort modes are a second string coupling: the manifest enum is what the
+   * Settings UI offers, and `sortBy` in config.ts only accepts what the code
+   * knows. A value in one and not the other is either an option that silently
+   * falls back to the default or a mode the user cannot reach.
+   */
+  it("offers exactly the sort modes the code implements", () => {
+    const sortBy =
+      manifest.contributes.configuration.properties["betterWorktrees.sortBy"];
+
+    expect([...sortBy.enum].sort()).toEqual([...WORKTREE_SORT_MODES].sort());
+    expect(sortBy.enumDescriptions).toHaveLength(sortBy.enum.length);
+  });
+
+  it("offers every sort mode in the picker", () => {
+    // The setting and the picker are separate lists; a mode missing from the
+    // picker is only reachable by hand-editing settings.json.
+    const offered = matchAll(
+      readFileSync(path.join(SRC_DIR, "commands", "view.ts"), "utf8"),
+      /mode:\s*"([^"]+)"/g,
+    );
+
+    expect(offered).toEqual([...WORKTREE_SORT_MODES].sort());
   });
 
   it("declares every theme colour id the code asks for", () => {

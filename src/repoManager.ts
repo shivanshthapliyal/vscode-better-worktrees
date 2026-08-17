@@ -1,9 +1,11 @@
 import path from "node:path";
 import * as vscode from "vscode";
-import { scanDepth } from "./config";
+import { scanDepth, sortBy } from "./config";
+import { WorktreeTimestamps } from "./display";
 import {
   getGitCommonDir,
   getWorktreeStatus,
+  getWorktreeTimestamps,
   listWorktrees,
 } from "./git/cli";
 import { findGitRepos } from "./git/discovery";
@@ -32,6 +34,26 @@ function statusesEqual(
   return true;
 }
 
+function timestampsEqual(
+  a: Map<string, WorktreeTimestamps>,
+  b: Map<string, WorktreeTimestamps>,
+): boolean {
+  if (a.size !== b.size) {
+    return false;
+  }
+  for (const [key, value] of a) {
+    const other = b.get(key);
+    if (
+      other === undefined ||
+      other.lastCommit !== value.lastCommit ||
+      other.created !== value.created
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
 /**
  * The single source of truth for what worktrees exist. Scans the workspace for
  * repositories, groups their worktrees by shared git directory, watches for
@@ -47,6 +69,8 @@ export class RepoManager {
   private refreshTimer: ReturnType<typeof setTimeout> | undefined;
   private statuses = new Map<string, WorktreeStatus>();
   private statusToken = 0;
+  private timestamps = new Map<string, WorktreeTimestamps>();
+  private timestampToken = 0;
   private disposed = false;
 
   readonly onDidChange = this.changeEmitter.event;
@@ -61,6 +85,11 @@ export class RepoManager {
 
   getStatus(fsPath: string): WorktreeStatus | undefined {
     return this.statuses.get(path.resolve(fsPath));
+  }
+
+  /** Commit and creation times, empty until a sort that needs them asks. */
+  getTimestamps(): ReadonlyMap<string, WorktreeTimestamps> {
+    return this.timestamps;
   }
 
   /** The repository group a worktree belongs to, for git commands that need a cwd. */
@@ -141,6 +170,54 @@ export class RepoManager {
     this.syncWatchers();
     this.changeEmitter.fire();
     void this.loadStatuses();
+    void this.loadTimestamps();
+  }
+
+  /**
+   * Commit and creation times, loaded only while a sort actually orders by them
+   * so the common alphabetical and dirty-first orders cost no extra git calls.
+   * Like statuses, this lands after the tree has already rendered.
+   */
+  private async loadTimestamps(): Promise<void> {
+    const token = ++this.timestampToken;
+    const mode = sortBy();
+    if (mode !== "lastCommit" && mode !== "created") {
+      if (this.timestamps.size === 0) {
+        return;
+      }
+      this.timestamps = new Map();
+      this.changeEmitter.fire();
+      return;
+    }
+
+    const perRepo = await Promise.all(
+      this.repos.map((repo) =>
+        getWorktreeTimestamps(
+          repo.rootPath,
+          repo.worktrees.filter((worktree) => !worktree.isBare),
+        ),
+      ),
+    );
+
+    if (token !== this.timestampToken || this.disposed) {
+      return;
+    }
+
+    // Same reason as the status load below: a refresh usually finds every time
+    // unchanged, and firing anyway makes the decoration provider repaint
+    // colours that did not move, which reads as flicker.
+    const next = new Map(perRepo.flatMap((times) => [...times]));
+    if (timestampsEqual(this.timestamps, next)) {
+      return;
+    }
+
+    this.timestamps = next;
+    this.changeEmitter.fire();
+  }
+
+  /** Reloads the times a sort orders by, after the sort mode changed. */
+  reloadTimestamps(): void {
+    void this.loadTimestamps();
   }
 
   /**

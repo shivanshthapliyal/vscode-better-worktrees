@@ -2,7 +2,7 @@
   "name": "better-worktrees",
   "displayName": "Better Worktrees",
   "description": "Manage git worktrees from the Explorer: live status, Source Control scoping, and safe removal.",
-  "version": "0.4.4",
+  "version": "0.5.0",
   "publisher": "shivanshthapliyal",
   "icon": "icon.png",
   "license": "MIT",
@@ -65,8 +65,8 @@
         "icon": "$(search-stop)"
       },
       {
-        "command": "betterWorktrees.toggleSortDirtyFirst",
-        "title": "Toggle Dirty-First Sort",
+        "command": "betterWorktrees.sortWorktrees",
+        "title": "Sort Worktrees By...",
         "category": "Worktrees",
         "icon": "$(sort-precedence)"
       },
@@ -274,7 +274,7 @@
           "group": "1_create@2"
         },
         {
-          "command": "betterWorktrees.toggleSortDirtyFirst",
+          "command": "betterWorktrees.sortWorktrees",
           "when": "view == betterWorktrees.worktrees",
           "group": "2_view@1"
         },
@@ -649,10 +649,28 @@
           "default": "branch",
           "markdownDescription": "How worktree folders are coloured in the Explorer.\n\n- `branch` — each branch gets a distinct hashed colour from a 20-colour palette (`betterWorktrees.worktreeColor1`–`20`).\n- `branchType` — colour by the branch's type mapped through `#betterWorktrees.branchTypeMap#`, using the `betterWorktrees.worktreeType*` colours.\n\nAll colours are themeable via `workbench.colorCustomizations`."
         },
+        "betterWorktrees.sortBy": {
+          "type": "string",
+          "enum": [
+            "branch",
+            "dirtyFirst",
+            "lastCommit",
+            "created"
+          ],
+          "enumDescriptions": [
+            "Alphabetically by branch name.",
+            "Worktrees with uncommitted changes first, then alphabetically.",
+            "Most recently committed first, so the branches you are working on lead.",
+            "Most recently created worktree first."
+          ],
+          "default": "branch",
+          "markdownDescription": "The order worktrees appear in. Every order keeps the current window's worktree first and bare worktrees last. Change it from the view title with `Sort Worktrees By...`.\n\nA worktree whose time cannot be read sorts after those that can, rather than being treated as the oldest."
+        },
         "betterWorktrees.sortDirtyFirst": {
           "type": "boolean",
           "default": false,
-          "markdownDescription": "Sort worktrees with uncommitted changes ahead of clean ones (after the current window's worktree). Toggle it from the view title. When off, worktrees are ordered alphabetically."
+          "markdownDeprecationMessage": "Replaced by `#betterWorktrees.sortBy#`. Still honoured while `sortBy` is left at `branch`, so an existing setting keeps working; set `sortBy` to `dirtyFirst` instead.",
+          "markdownDescription": "Sort worktrees with uncommitted changes ahead of clean ones (after the current window's worktree)."
         },
         "betterWorktrees.branchTypeMap": {
           "type": "object",

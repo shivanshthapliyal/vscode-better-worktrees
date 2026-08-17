@@ -1,7 +1,7 @@
 import { homedir } from "node:os";
 import path from "node:path";
 import * as vscode from "vscode";
-import { sortDirtyFirst } from "../config";
+import { sortBy } from "../config";
 import {
   formatWorktreeLabel,
   formatWorktreeLocation,
@@ -52,7 +52,13 @@ export class WorktreeTreeProvider
     this.subscriptions.push(
       this.repos.onDidChange(() => this.changeEmitter.fire(undefined)),
       vscode.workspace.onDidChangeConfiguration((event) => {
-        if (event.affectsConfiguration("betterWorktrees.sortDirtyFirst")) {
+        if (
+          event.affectsConfiguration("betterWorktrees.sortBy") ||
+          event.affectsConfiguration("betterWorktrees.sortDirtyFirst")
+        ) {
+          // A timestamp mode has nothing to order by until the times are read,
+          // and they are only read while such a mode is selected.
+          this.repos.reloadTimestamps();
           this.changeEmitter.fire(undefined);
         }
       }),
@@ -101,20 +107,24 @@ export class WorktreeTreeProvider
     worktrees: readonly Worktree[],
     repo: RepoGroup,
   ): Worktree[] {
-    const dirtyPaths = sortDirtyFirst()
-      ? new Set(
-          worktrees
-            .filter(
-              (worktree) =>
-                (this.repos.getStatus(worktree.path)?.dirtyCount ?? 0) > 0,
-            )
-            .map((worktree) => path.resolve(worktree.path)),
-        )
-      : undefined;
+    const mode = sortBy();
+    const dirtyPaths =
+      mode === "dirtyFirst"
+        ? new Set(
+            worktrees
+              .filter(
+                (worktree) =>
+                  (this.repos.getStatus(worktree.path)?.dirtyCount ?? 0) > 0,
+              )
+              .map((worktree) => path.resolve(worktree.path)),
+          )
+        : undefined;
 
     return sortWorktreesForDisplay(worktrees, {
       currentPath: repo.rootPath,
+      mode,
       dirtyPaths,
+      timestamps: this.repos.getTimestamps(),
     });
   }
 

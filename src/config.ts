@@ -2,6 +2,8 @@ import * as vscode from "vscode";
 import {
   BranchType,
   DEFAULT_BRANCH_TYPE_MAP,
+  WORKTREE_SORT_MODES,
+  WorktreeSortMode,
 } from "./display";
 import { DEFAULT_WORKTREE_PATH_TEMPLATE } from "./worktreePath";
 
@@ -53,8 +55,25 @@ export function worktreePathTemplate(): string {
   );
 }
 
-export function sortDirtyFirst(): boolean {
-  return settings().get<boolean>("sortDirtyFirst", false);
+/**
+ * The order the view puts worktrees in.
+ *
+ * `sortDirtyFirst` was the original boolean form of this setting. It stays
+ * honoured so an existing configuration keeps the order the user chose, but
+ * only while `sortBy` is left at its default — an explicit `sortBy` is a newer
+ * and more specific statement of intent.
+ */
+export function sortBy(): WorktreeSortMode {
+  const configured = settings().get<string>("sortBy", "branch");
+  if (
+    configured !== "branch" &&
+    (WORKTREE_SORT_MODES as readonly string[]).includes(configured)
+  ) {
+    return configured as WorktreeSortMode;
+  }
+  return settings().get<boolean>("sortDirtyFirst", false)
+    ? "dirtyFirst"
+    : "branch";
 }
 
 export function colorMode(): ColorMode {
