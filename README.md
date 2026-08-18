@@ -7,6 +7,7 @@
 <p align="center">
   <a href="#installation"><img src="https://img.shields.io/badge/Install-VS%20Code%20%26%20Cursor-007ACC?style=flat-square" alt="Install"></a>
   <a href="https://open-vsx.org/extension/shivanshthapliyal/better-worktrees"><img src="https://img.shields.io/open-vsx/v/shivanshthapliyal/better-worktrees?style=flat-square&label=Open%20VSX" alt="Open VSX version"></a>
+  <a href="https://open-vsx.org/extension/shivanshthapliyal/better-worktrees"><img src="https://img.shields.io/open-vsx/dt/shivanshthapliyal/better-worktrees?style=flat-square&label=downloads" alt="Open VSX downloads"></a>
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT License">
 </p>
 
