@@ -1,6 +1,10 @@
 out/
 node_modules/
 *.vsix
+# Nested worktrees used while dogfooding the extension. Already excluded from
+# the package; excluded here too so a checkout — and the absolute gitdir path
+# in its .git file — can never be committed.
+.worktrees/
 .vscode-test/
 .DS_Store
 __pycache__/
